@@ -1,0 +1,42 @@
+*{
+    margin: 0;
+    padding: 0;
+    font-family: Inter, sans-serif;
+}
+a {
+    color: black;
+    text-decoration: none;
+}
+button{
+    border: none;
+    cursor: pointer;
+    background-color: transparent;
+}
+body {
+    margin: 0;
+    font-family: Inter, sans-serif;
+}
+ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+html{
+    font-family: 'Roboto', sans-serif;
+    height: 100%;
+    margin: 0;
+}
+.logo-container{
+    margin: 10px;
+    display: flex;
+    align-items: center;
+}
+.logo-container img{
+    width: 60px;
+    height: auto;
+}
+.site-name {
+    font-size: 25px;
+    font-weight: bold;
+    margin: 10px;
+}
