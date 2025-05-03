@@ -83,7 +83,7 @@ Route::get('/getCar/{carId}', function ($carId) {
         return response()->json(['message' => 'User not authenticated'], 401);
     }
 
-    $car = Car::with('images')
+    $car = Car::with(['images', 'brand'])
              ->where('user_id', $user->id)
              ->find($carId);
 
@@ -99,3 +99,7 @@ Route::get('/getCar/{carId}', function ($carId) {
     return response()->json($car);
 });
 Route::get('/allCarBrands', [CarController::class, 'getCarBrands']);
+
+Route::get('/profile/{carid}', function () {
+    return view('welcome');
+});

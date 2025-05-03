@@ -30,11 +30,13 @@
             alert('Failed to delete the car.');
         }
     }
+    console.log('Loaded car:', props)
+    
 </script>
 
 <template>
     <div class="ProfileCarcard">
-        <RouterLink to="/car">
+        <RouterLink :to="`/profile/${car.id}`">
             <div class="image-container">
                 <img class="car-img" :src="car.images[currentImageIndex]?.image_path"></img>
                 <div class="cog-dropdown-wrapper">
@@ -50,14 +52,14 @@
             </div>
 
             <div class="card-description">
-                <h3 class="car-title">{{car.brand?.manufacturer}} {{car.model}}</h3>
+                <h3 class="car-title">{{car.brand.manufacturer}} {{car.model}}</h3>
                 <ul class="car-details">
                     <li>Year: {{ car.year }}</li>
                     <li>Mileage: {{ car.mileage }}km</li>
                 </ul>
             </div>
 
-            <img class="car-logo" :src="car.brand?.image_path">
+            <img class="car-logo" :src="car.brand.image_path">
         </RouterLink>
     </div>
 </template>

@@ -1,6 +1,5 @@
 <script setup>
     import ProfileSelection from './ProfileSelection.vue'
-    import ProfileSellingCar from './ProfileSellingCar.vue'
 
     import { ref, onMounted } from 'vue';
     import axios from 'axios'
@@ -24,9 +23,6 @@
         }
     })
     
-    const toggleGarage = () => {
-        showGarage.value = true
-    }
     
 </script>
 
@@ -42,12 +38,12 @@
             </div>
 
             <ul class="options">
-                <li @click="toggleGarage">My Garage</li>
+                <li><RouterLink to="/profile">My Garage</RouterLink></li>
                 <li>Settings</li>
 
             </ul>
         </div>
-        <ProfileSelection v-if="showGarage" />
+        <ProfileSelection />
         
     </div>
 </template>

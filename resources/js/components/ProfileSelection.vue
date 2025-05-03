@@ -1,14 +1,22 @@
 <script setup>
-    import { ref, onMounted } from 'vue'
+    import { ref, onMounted, watch } from 'vue';
     import axios from 'axios'
     import ProfileCar from './ProfileCar.vue'
     import { RouterLink, useRoute } from 'vue-router'
     import { useRouter } from 'vue-router'
+    import ProfileSellingCar from './ProfileSellingCar.vue'
 
     const router = useRouter()
+    const route = useRoute();
     const cars = ref([])
+    const carId = ref(route.params.carid);
+
+    watch(() => route.params.carid, (newCarId) => {
+        carId.value = newCarId;
+    });
 
     onMounted(async () => {
+        
         try {
             const response = await axios.get('/profile/cars')
             cars.value = response.data
@@ -21,13 +29,15 @@
 
 <template>
     <div class="profileSelection-content">
-        <div class="MyGarage-selection">
-            <ProfileCar v-for="car in cars" :key="car.id" :car="car" />   
-                    
+        <div class="MyGarage-selection" v-if="!carId">
+            <ProfileCar v-for="car in cars" :key="car.id" :car="car" />                       
             <div class="addCar">
                 <RouterLink to="/addCar" class="plus-link">+</RouterLink>
-            </div>                 
+            </div>
         </div>
+        
+        <ProfileSellingCar v-if="carId" :car-id="carId" />
+
     </div>
 </template>
 <style>

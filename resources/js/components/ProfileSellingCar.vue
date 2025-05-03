@@ -39,8 +39,11 @@
         margin: 50px;
     }
     .SellCarOptions button{
+        width: 200px;
+        height: 65px;
         margin-inline: 170px;
         border-radius: 15px;
+        border: 3px solid #000;
     }
     .SellCar-selection{
         width: 100%;
