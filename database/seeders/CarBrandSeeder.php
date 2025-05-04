@@ -14,6 +14,10 @@ class CarBrandSeeder extends Seeder
     public function run(): void
     {
         CarBrand::create([
+            'manufacturer' => 'Honda',
+            'image_path' => '/storage/car_brands/Honda.png',   
+        ]);
+        CarBrand::create([
             'manufacturer' => 'BMW',
             'image_path' => '/storage/car_brands/bmw.png',   
         ]);

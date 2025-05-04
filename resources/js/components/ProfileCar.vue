@@ -30,7 +30,6 @@
             alert('Failed to delete the car.');
         }
     }
-    console.log('Loaded car:', props)
     
 </script>
 
@@ -52,12 +51,13 @@
             </div>
 
             <div class="card-description">
-                <h3 class="car-title">{{car.brand.manufacturer}} {{car.model}}</h3>
+                <h3 class="car-title">{{car.brand.manufacturer}} {{car.model.model}}</h3>
                 <ul class="car-details">
                     <li>Year: {{ car.year }}</li>
                     <li>Mileage: {{ car.mileage }}km</li>
                 </ul>
             </div>
+            
 
             <img class="car-logo" :src="car.brand.image_path">
         </RouterLink>

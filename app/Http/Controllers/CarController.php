@@ -67,7 +67,7 @@ class CarController extends Controller
     public function GetProfileCars()
     {
         $cars = Car::where('user_id', Auth::id())
-                    ->with(['images', 'brand'])
+                    ->with(['images', 'brand', 'model'])
                     ->get();
 
 

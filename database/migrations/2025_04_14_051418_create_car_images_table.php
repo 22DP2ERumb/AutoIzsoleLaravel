@@ -18,8 +18,8 @@ return new class extends Migration
             $table->timestamps();
 
             $table->foreign('car_id')
-                  ->references('id')->on('cars')
-                  ->onDelete('cascade'); // delete images if car is deleted
+                  ->references(columns: 'id')->on('cars')
+                  ->onDelete(action: 'cascade'); // delete images if car is deleted
         });
     }
 

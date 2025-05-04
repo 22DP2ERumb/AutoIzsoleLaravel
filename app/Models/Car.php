@@ -18,9 +18,17 @@ class Car extends Model
     {
         return $this->belongsTo(CarBrand::class, 'car_brand_id');
     }
+    public function model()
+    {
+        return $this->belongsTo(CarModel::class, 'car_model_id');
+    }
+    public function acutions()
+    {
+        return $this->hasOne(CarAuction::class);
+    }
 
     // Optional: You can also add fillable or guarded properties if needed
     protected $fillable = [
-        'user_id', 'car_brand_id', 'model', 'year', 'mileage', 'fuel_type', 'transmission', 'engine_size', 'body_type', 'color'
+        'user_id', 'car_brand_id', 'car_model_id', 'year', 'mileage', 'fuel_type', 'transmission', 'engine_size', 'body_type', 'color'
     ];
 }

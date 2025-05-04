@@ -16,7 +16,7 @@ class CarSeeder extends Seeder
         $cars = [
             [
                 'car_brand_id' => 1,
-                'model' => 'A4',
+                'car_model_id' => 1,
                 'year' => 2018,
                 'mileage' => 60000,
                 'fuel_type' => 'Diesel',
@@ -32,7 +32,7 @@ class CarSeeder extends Seeder
             ],
             [
                 'car_brand_id' => 1,
-                'model' => 'Q5',
+                'car_model_id' => 2,
                 'year' => 2020,
                 'mileage' => 30000,
                 'fuel_type' => 'Petrol',
@@ -48,7 +48,7 @@ class CarSeeder extends Seeder
             ],
             [
                 'car_brand_id' => 2,
-                'model' => 'Civic',
+                'car_model_id' => 4,
                 'year' => 2017,
                 'mileage' => 75000,
                 'fuel_type' => 'Hybrid',
@@ -64,7 +64,7 @@ class CarSeeder extends Seeder
             ],
             [
                 'car_brand_id' => 2,
-                'model' => 'Accord',
+                'car_model_id' => 5,
                 'year' => 2019,
                 'mileage' => 45000,
                 'fuel_type' => 'Petrol',
@@ -80,7 +80,7 @@ class CarSeeder extends Seeder
             ],
             [
                 'car_brand_id' => 3,
-                'model' => 'Model 3',
+                'car_model_id' => 7,
                 'year' => 2021,
                 'mileage' => 15000,
                 'fuel_type' => 'Electric',

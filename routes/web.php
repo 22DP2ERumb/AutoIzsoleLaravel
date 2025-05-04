@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CarController;
+use App\Http\Controllers\AuctionController;
 use App\Models\Car; 
 
 Route::get('/', function () {
@@ -46,6 +47,7 @@ Route::get('/addCar', function () {
 });
 
 Route::post("/addCar", [CarController::class, "addCarPost"]);
+Route::post("/AuctionCar", [AuctionController::class, "StartAuctionPost"]);
 
 Route::delete('/deleteCar/{carId}', function ($carId) {
     $user = Auth::user();
@@ -83,7 +85,7 @@ Route::get('/getCar/{carId}', function ($carId) {
         return response()->json(['message' => 'User not authenticated'], 401);
     }
 
-    $car = Car::with(['images', 'brand'])
+    $car = Car::with(['images', 'brand', 'model'])
              ->where('user_id', $user->id)
              ->find($carId);
 
