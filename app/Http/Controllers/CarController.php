@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Response; 
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use App\Models\CarModel;  // Make sure this is at the top of the file
 
 class CarController extends Controller
 {
@@ -81,6 +82,64 @@ class CarController extends Controller
         // Return the car brands as JSON
         return response()->json($carBrands);
     }
+    public function update(Request $request)
+{
+    // Check if the user is authenticated
+    $user = Auth::user();
+    if (!$user) {
+        return response()->json(['error' => 'Unauthorized'], 401);
+    }
+
+    // Validate the request data
+    $validated = $request->validate([
+        'car_id' => 'required|exists:cars,id',
+        'car_brand' => 'required|string|exists:car_brands,manufacturer', // Validate by brand manufacturer name
+        'car_model' => 'required|string|exists:car_models,model', // Validate by model name
+        'year' => 'required|integer',
+        'mileage' => 'required|integer',
+        'fuel_type' => 'required|string',
+        'transmission' => 'required|string',
+        'engine_size' => 'required|string',
+        'body_type' => 'required|string',
+        'color' => 'required|string',
+    ]);
+
+    // Find the car by its ID
+    $car = Car::find($validated['car_id']);
+
+    // Check if the authenticated user owns the car
+    if ($car->user_id !== $user->id) {
+        return response()->json(['error' => 'You do not own this car'], 403);
+    }
+
+    // Find the car brand and model by their names
+    $carBrand = CarBrand::where('manufacturer', $validated['car_brand'])->first();
+    $carModel = CarModel::where('model', $validated['car_model'])->first();
+
+    // If no brand or model found, return an error
+    if (!$carBrand) {
+        return response()->json(['error' => 'Brand not found'], 404);
+    }
+
+    if (!$carModel) {
+        return response()->json(['error' => 'Model not found'], 404);
+    }
+
+    // Update the car's information with the found IDs
+    $car->update([
+        'car_brand_id' => $carBrand->id,
+        'car_model_id' => $carModel->id,
+        'year' => $validated['year'],
+        'mileage' => $validated['mileage'],
+        'fuel_type' => $validated['fuel_type'],
+        'transmission' => $validated['transmission'],
+        'engine_size' => $validated['engine_size'],
+        'body_type' => $validated['body_type'],
+        'color' => $validated['color'],
+    ]);
+
+    return response()->json(['message' => 'Car updated successfully', 'car' => $car], 200);
+}
     
     
 }

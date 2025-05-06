@@ -16,17 +16,37 @@
     const AuctionCar = ref(false)
     const editCar = ref(false)
 
+
+
     const fetchCar = async () => {
     try {
         const response = await axios.get(`/getCar/${props.carId}`)
         car.value = response.data
+        newBrand.value = car.value.brand.manufacturer
+        newModel.value = car.value.model.model
+        newYear.value = car.value.year
+        newMileage.value = car.value.mileage
+        newFuelType.value = car.value.fuel_type
+        newTransmission.value = car.value.transmission
+        newEngineSize.value = car.value.engine_size
+        newBodyType.value = car.value.body_type
+        newColor.value = car.value.color
+
+
+        const selectedBrand = response.data.brand;
+        if (selectedBrand && selectedBrand.id) {
+            getModels(selectedBrand.id);
+        }
+
     } catch {
         car.value = null
+        newBrand.value = ''
     }
     }
 
     watch(() => props.carId, fetchCar, { immediate: true })
     onMounted(async () => {
+        
         try {
             const response = await axios.get('/allCarBrands')
             brands.value = response.data
@@ -46,6 +66,106 @@
     const error = ref('')
 
     const brands = ref([])
+
+    const models = ref([])
+
+    const getModels = async (brandId) => {
+    try {
+        const response = await axios.get(`/getModelsByBrand/${brandId}`)
+        models.value = response.data
+    } catch (error) {
+        console.error('Error fetching car models:', error)
+    }}
+
+
+
+    const newBrand = ref();
+    const newModel = ref();
+    const newYear = ref();
+    const newMileage = ref();
+    const newFuelType = ref();
+    const newTransmission = ref();
+    const newEngineSize = ref();
+    const newBodyType = ref();
+    const newColor = ref();
+
+    
+    const EditCar = async () => {
+    if (!validateNewValues()) return;
+
+    try {
+        // Make sure the values are passed correctly, especially for brand and model
+        await axios.post('/updateCar', {
+            car_id: car.value.id, // Ensure car_id is being sent
+            car_brand: newBrand.value, // Ensure this value is correctly passed
+            car_model: newModel.value, // Ensure this value is correctly passed
+            year: newYear.value,
+            mileage: newMileage.value,
+            fuel_type: newFuelType.value,
+            transmission: newTransmission.value,
+            engine_size: newEngineSize.value.toString(), // Ensure engine size is passed as a string
+            body_type: newBodyType.value,
+            color: newColor.value,
+        });
+
+        // Reload the page to reflect the updated data
+        window.location.reload(); // This will reload the current page
+
+    } catch (error) {
+        console.error("Error updating car:", error);
+        // Optionally, handle the error to show a user-friendly message
+    }
+};
+
+watch(newBrand, (newVal) => {
+    const selectedBrand = brands.value.find(b => b.manufacturer === newVal);
+    if (selectedBrand) {
+        // Fetch models for the selected brand
+        getModels(selectedBrand.id)
+            .then(() => {
+                // Reset newModel to null or to the first model (if desired)
+                newModel.value = null; // Clears the previously selected model
+            })
+            .catch(error => {
+                console.error('Error fetching models:', error);
+            });
+    }
+});
+        
+        const validateNewValues = () => {
+        if (!newBrand.value || !newModel.value) {
+            error.value = 'Brand and Model are required';
+            return false;
+        }
+        if (!newYear.value || newYear.value < 1886 || newYear.value > new Date().getFullYear() + 1) {
+            error.value = 'Invalid year';
+            return false;
+        }
+        if (newMileage.value < 0) {
+            error.value = 'Mileage cannot be negative';
+            return false;
+        }
+        if (!newFuelType.value) {
+            error.value = 'Fuel type is required';
+            return false;
+        }
+        if (!newTransmission.value) {
+            error.value = 'Transmission is required';
+            return false;
+        }
+        if (newEngineSize.value < 0) {
+            error.value = 'Engine size cannot be negative';
+            return false;
+        }
+        if (!newBodyType.value || !newColor.value) {
+            error.value = 'Body type and color are required';
+            return false;
+        }
+
+        error.value = '';
+        return true;
+    }
+
 
 
 
@@ -165,49 +285,61 @@
     </div>
 
     <div class="editCar-specifications" v-if="editCar && !AuctionCar">
-        <div class="car-specifications">
-            <ul>
-                <li>
-                    Brand:
-                    <select>
-                        <option value="">{{ car?.brand.manufacturer }}</option>
-                        <option v-for="brand in brands" :key="brand.id" :value="brand.manufacturer">
-                        {{ brand.manufacturer }}
-                        </option>
-                    </select>
-                </li>
+  <div class="car-specifications">
+    <ul>
+        <li>
+            Brand:
+            <select v-model="newBrand">
+            <option disabled value="">{{ car?.brand.manufacturer }}</option>
+            <option v-for="brand in brands" :key="brand.id" :value="brand.manufacturer">
+                {{ brand.manufacturer }}
+            </option>
+            </select>
+        </li>
 
-                <li>Model: <input type="text" :value="car?.model.model" /></li>
-                <li>Year: <input type="number" :value="car?.year" /></li>
-                <li>Mileage: <input type="number" :value="car?.mileage" /></li>
+        <li>
+            Model:
+            <select v-model="newModel">
+            <option disabled value="">{{ car?.model.model }}</option>
+            <option v-for="model in models" :key="model.id" :value="model.model">
+                {{ model.model }}
+            </option>
+            </select>
+        </li>
 
-                <li>
-                    Fuel Type:
-                    <select>
-                        <option value="">{{ car?.fuel_type }}</option>
-                        <option value="Petrol">Petrol</option>
-                        <option value="Diesel">Diesel</option>
-                        <option value="Electric">Electric</option>
-                        <option value="Hybrid">Hybrid</option>
-                    </select>
-                </li>
+        <li>Year: <input type="number" v-model="newYear" /></li>
+        <li>Mileage: <input type="number" v-model="newMileage" /></li>
 
-                <li>
-                    Transmission:
-                    <select >
-                        <option value="">{{ car?.transmission }}</option>
-                        <option value="Manual">Manual</option>
-                        <option value="Automatic">Automatic</option>
-                        <option value="CVT">CVT</option>
-                    </select>
-                </li>
+        <li>
+            Fuel Type:
+            <select v-model="newFuelType">
+            <option disabled value="">{{ car?.fuel_type }}</option>
+            <option value="Petrol">Petrol</option>
+            <option value="Diesel">Diesel</option>
+            <option value="Electric">Electric</option>
+            <option value="Hybrid">Hybrid</option>
+            </select>
+        </li>
 
-                <li>Engine Size: <input type="number" step="0.1" :value="car?.engine_size" /></li>
-                <li>Body Type: <input type="text" :value="car?.body_type" /></li>
-                <li>Color: <input type="text" :value="car?.color" /></li>
-            </ul>
-        </div>
+        <li>
+            Transmission:
+            <select v-model="newTransmission">
+            <option disabled value="">{{ car?.transmission }}</option>
+            <option value="Manual">Manual</option>
+            <option value="Automatic">Automatic</option>
+            <option value="CVT">CVT</option>
+            </select>
+        </li>
+
+        <li>Engine Size: <input type="number" step="0.1" v-model="newEngineSize" /></li>
+        <li>Body Type: <input type="text" v-model="newBodyType" /></li>
+        <li>Color: <input type="text" v-model="newColor" /></li>
+
+        <button @click="EditCar()">EDIT</button>
+        <p v-if="error" class="auction-car-error-message">{{ error }}</p>
+        </ul>
     </div>
+</div>
 
     <div class="AuctionCar-specifications" v-if="AuctionCar && !editCar">
         <div class="car-specifications">

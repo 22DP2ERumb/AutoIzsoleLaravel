@@ -5,6 +5,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CarController;
 use App\Http\Controllers\AuctionController;
 use App\Models\Car; 
+use App\Models\CarModel; 
 
 Route::get('/', function () {
     return view(view: 'welcome');
@@ -105,3 +106,10 @@ Route::get('/allCarBrands', [CarController::class, 'getCarBrands']);
 Route::get('/profile/{carid}', function () {
     return view('welcome');
 });
+
+Route::get('/getModelsByBrand/{brandid}', function ($brandid) {
+
+    $carModels = CarModel::where('brand_id', $brandid)->get();
+    return response()->json($carModels);
+});
+Route::post('/updateCar', [CarController::class, 'update']);
