@@ -26,8 +26,8 @@ class CarSeeder extends Seeder
                 'color' => 'Black',
                 'user_id' => 1,
                 'images' => [
-                    '/storage/car_images/3hfJHylMPZ6X3LjYeDOKpxOJShs7oTXIUqUxxunu.jpg',
-                    '/storage/car_images/4z2E6FfRlBkdZ2KtcticLOC8KD9UO3p3TP3N0nxf.jpg'
+                    '/storage/car_images/car1.jpg',
+                    '/storage/car_images/car2.jpg'
                 ]
             ],
             [
@@ -42,8 +42,8 @@ class CarSeeder extends Seeder
                 'color' => 'White',
                 'user_id' => 1,
                 'images' => [
-                    '/storage/car_images/4z2E6FfRlBkdZ2KtcticLOC8KD9UO3p3TP3N0nxf.jpg',
-                    '/storage/car_images/3hfJHylMPZ6X3LjYeDOKpxOJShs7oTXIUqUxxunu.jpg'
+                    '/storage/car_images/car2.jpg',
+                    '/storage/car_images/car1.jpg'
                 ]
             ],
             [
@@ -58,8 +58,8 @@ class CarSeeder extends Seeder
                 'color' => 'Blue',
                 'user_id' => 1,
                 'images' => [
-                    '/storage/car_images/3hfJHylMPZ6X3LjYeDOKpxOJShs7oTXIUqUxxunu.jpg',
-                    '/storage/car_images/4z2E6FfRlBkdZ2KtcticLOC8KD9UO3p3TP3N0nxf.jpg'
+                    '/storage/car_images/car1.jpg',
+                    '/storage/car_images/car2.jpg'
                 ]
             ],
             [
@@ -74,8 +74,8 @@ class CarSeeder extends Seeder
                 'color' => 'Grey',
                 'user_id' => 1,
                 'images' => [
-                    '/storage/car_images/3hfJHylMPZ6X3LjYeDOKpxOJShs7oTXIUqUxxunu.jpg',
-                    '/storage/car_images/4z2E6FfRlBkdZ2KtcticLOC8KD9UO3p3TP3N0nxf.jpg'
+                    '/storage/car_images/car1.jpg',
+                    '/storage/car_images/car2.jpg'
                 ]
             ],
             [
@@ -90,8 +90,8 @@ class CarSeeder extends Seeder
                 'color' => 'Red',
                 'user_id' => 1,
                 'images' => [
-                    '/storage/car_images/4z2E6FfRlBkdZ2KtcticLOC8KD9UO3p3TP3N0nxf.jpg',
-                    '/storage/car_images/3hfJHylMPZ6X3LjYeDOKpxOJShs7oTXIUqUxxunu.jpg'
+                    '/storage/car_images/car2.jpg',
+                    '/storage/car_images/car1.jpg'
                 ]
             ],
         ];

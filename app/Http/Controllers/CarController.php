@@ -19,52 +19,77 @@ class CarController extends Controller
     public function addCarPost(Request $request)
     {
         Log::info('Car data:', $request->all());
+        // Validate first
+        $validator = Validator::make($request->all(), [
+        'brand' => 'required|string|exists:car_brands,manufacturer',
+        'model' => 'required|string|exists:car_models,model',
+        'year' => 'required|integer',
+        'mileage' => 'required|integer',
+        'fuel_type' => 'required|string',
+        'transmission' => 'required|string',
+        'engine_size' => 'required|numeric',
+        'body_type' => 'required|string',
+        'color' => 'required|string',
+        'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048'
+    ]);
 
-        $car_brand_id = CarBrand::where('manufacturer', $request->brand)->first()->id;
-
-        $car = Car::create([
-            'user_id' => Auth::user()->id, // Pievieno lietotāja ID
-            'car_brand_id' => $car_brand_id,
-            'model' => $request->model,
-            'year' => $request->year,
-            'mileage' => $request->mileage,
-            'fuel_type' => $request->fuel_type,
-            'transmission' => $request->transmission,
-            'engine_size' => $request->engine_size,
-            'body_type' => $request->body_type,
-            'color' => $request->color,
-        ]);
-
-        if ($request->hasFile('images')) {
-            foreach ($request->file('images') as $image) {
-                $path = $image->store('car_images', 'public');
-                Car_Images::create([
-                    'car_id' => $car->id,
-                    'image_path' => Storage::url($path), // generates URL like /storage/...
-                ]);
-            }
-        }
-        
-
-
-
-
-        $validator = Validator::make($request->all(), []);
-                
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Validation failed.',
-                'errors' => $validator->errors()
-            ], 400);
-        }
-
+    if ($validator->fails()) {
         return response()->json([
-            'status' => 'success',
-            'message' => 'Registration successful.',
-            'car' => $car
-        ], 201);
+            'status' => 'error',
+            'message' => 'Validation failed.',
+            'errors' => $validator->errors()
+        ], 400);
     }
+
+    // Find car brand ID
+    $carBrand = CarBrand::where('manufacturer', $request->brand)->first();
+    if (!$carBrand) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Invalid car brand.'
+        ], 400);
+    }
+
+    $carModel = CarModel::where('model', $request->model)->first();
+
+    if (!$carModel) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Model not found.',
+        ], 404);
+    }
+
+    // Create car
+    $car = Car::create([
+        'user_id' => Auth::id(),
+        'car_brand_id' => $carBrand->id,
+        'car_model_id' => $carModel->id,
+        'year' => $request->year,
+        'mileage' => $request->mileage,
+        'fuel_type' => $request->fuel_type,
+        'transmission' => $request->transmission,
+        'engine_size' => $request->engine_size,
+        'body_type' => $request->body_type,
+        'color' => $request->color,
+    ]);
+
+    // Save images
+    if ($request->hasFile('images')) {
+        foreach ($request->file('images') as $image) {
+            $path = $image->store('car_images', 'public');
+            Car_Images::create([
+                'car_id' => $car->id,
+                'image_path' => Storage::url($path),
+            ]);
+        }
+    }
+
+    return response()->json([
+        'status' => 'success',
+        'message' => 'Registration successful.',
+        'car' => $car
+    ], 201);
+}
     public function GetProfileCars()
     {
         $cars = Car::where('user_id', Auth::id())

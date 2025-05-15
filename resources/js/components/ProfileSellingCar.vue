@@ -416,13 +416,17 @@ watch(newBrand, (newVal) => {
         font-style: italic;
     }
 
-    .car-specifications li span {
-        position: absolute;
-        left: 50%;
-        transform: translateX(-50%);
-        font-weight: bold;
-        font-style: normal;
-    }
+    .car-specifications li {
+    display: flex;
+    justify-content: space-between;
+    font-style: italic;
+}
+
+.car-specifications li span {
+    position: static; /* remove absolute positioning */
+    font-weight: bold;
+    font-style: normal;
+}
     .SellCarOptions{
         margin-top: 120px;
         display: flex;
@@ -430,7 +434,7 @@ watch(newBrand, (newVal) => {
     .SellCarOptions button{
         width: 200px;
         height: 65px;
-        margin-inline: 170px;
+        margin-inline: 60px;
         border-radius: 15px;
         border: 2px solid green;
         transition: background-color 0.4s;

@@ -1,7 +1,8 @@
 <script setup>
-import { ref, onMounted } from 'vue'
-import axios from 'axios'
-import { useRouter } from 'vue-router'
+import { ref, watch, onMounted } from 'vue'
+  import axios from 'axios'
+  import ProfileCar from './ProfileCar.vue'
+  import { useRouter } from 'vue-router';
 
 const router = useRouter()
 const images = ref([])
@@ -18,6 +19,33 @@ const carBodyType = ref('')
 const carColor = ref('')
 const error = ref('')
 const brands = ref([])
+
+
+
+watch(carBrand, (newVal) => {
+    const selectedBrand = brands.value.find(b => b.manufacturer === newVal);
+    if (selectedBrand) {
+        // Fetch models for the selected brand
+        getModels(selectedBrand.id)
+            .then(() => {
+                // Reset newModel to null or to the first model (if desired)
+                carModel.value = null; // Clears the previously selected model
+            })
+            .catch(error => {
+                console.error('Error fetching models:', error);
+            });
+    }
+});
+
+const models = ref([])
+
+const getModels = async (brandId) => {
+    try {
+        const response = await axios.get(`/getModelsByBrand/${brandId}`)
+        models.value = response.data
+    } catch (error) {
+        console.error('Error fetching car models:', error)
+    }}
 
 onMounted(async () => {
   try {
@@ -147,7 +175,7 @@ const validateForm = () => {
         <label>
             Brand:
             <select v-model="carBrand">
-            <option value="">Select brand</option>
+            <option value="" disabled>Select brand</option>
             <option v-for="brand in brands" :key="brand.id" :value="brand.manufacturer">
               {{ brand.manufacturer }}
             </option>
@@ -156,7 +184,12 @@ const validateForm = () => {
 
         <label>
             Model:
-            <input type="text" v-model="carModel" placeholder="e.g. A4, Focus" />
+            <select v-model="carModel">
+            <option value="" disabled>Select brand</option>
+            <option v-for="model in models" :key="model.id" :value="model.model">
+                {{ model.model }}
+            </option>
+            </select>
         </label>
 
         <label>
