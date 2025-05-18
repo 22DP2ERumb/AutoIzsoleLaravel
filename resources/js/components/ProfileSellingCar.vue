@@ -278,13 +278,22 @@ watch(newBrand, (newVal) => {
                 
             </ul>
         </div>
-        <div class="auction-button-cancel">
-            Cancel auction.
-        </div>
+        
         <div class="SellCarOptions">
-            <button>List for Sale</button>
-            <button @click="AuctionCar = true">List for Auction</button>
+
+            <button 
+                v-if="!car.auctions || !car.auctions.is_active"
+                @click="AuctionCar = true">
+                List for Auction
+            </button>
+
+            <button 
+                v-if="car.auctions && car.auctions.is_active"
+                style="border-color: red;">
+                Cancel Auction
+            </button>
         </div>
+
     </div>
 
     <div class="editCar-specifications" v-if="editCar && !AuctionCar">

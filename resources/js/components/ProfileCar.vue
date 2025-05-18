@@ -89,9 +89,6 @@
     color: white;
     transition: color 0.3s ease;
 }
-li{
-    
-}
 .auction-badge {
   display: inline-block; /* bright red */
   color: white;

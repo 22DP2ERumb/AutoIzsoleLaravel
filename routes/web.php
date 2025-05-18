@@ -6,6 +6,7 @@ use App\Http\Controllers\CarController;
 use App\Http\Controllers\AuctionController;
 use App\Models\Car; 
 use App\Models\CarModel; 
+use App\Models\CarAuction;
 
 Route::get('/', function () {
     return view(view: 'welcome');
@@ -113,3 +114,23 @@ Route::get('/getModelsByBrand/{brandid}', function ($brandid) {
     return response()->json($carModels);
 });
 Route::post('/updateCar', [CarController::class, 'update']);
+
+Route::delete('/deleteAuction/{auctionId}', function ($auctionId) {
+    $user = Auth::user();
+
+    if (!$user) {
+        return response()->json(['message' => 'User not authenticated'], 401);
+    }
+
+    $auction = CarAuction::where('user_id', $user->id)->find($auctionId);
+
+    if (!$auction) {
+        return response()->json(['message' => 'Auction not found or not owned by user'], 404);
+    }
+
+    $auction->delete();
+
+    return response()->json(['message' => 'Auction deleted successfully']);
+});
+
+Route::get('/carAuctions', [CarController::class, 'GetAuctionCars']);
