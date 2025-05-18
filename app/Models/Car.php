@@ -22,7 +22,7 @@ class Car extends Model
     {
         return $this->belongsTo(CarModel::class, 'car_model_id');
     }
-    public function acutions()
+    public function auctions()
     {
         return $this->hasOne(CarAuction::class);
     }

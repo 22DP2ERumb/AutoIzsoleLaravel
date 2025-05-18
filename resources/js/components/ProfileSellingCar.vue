@@ -278,6 +278,9 @@ watch(newBrand, (newVal) => {
                 
             </ul>
         </div>
+        <div class="auction-button-cancel">
+            Cancel auction.
+        </div>
         <div class="SellCarOptions">
             <button>List for Sale</button>
             <button @click="AuctionCar = true">List for Auction</button>
@@ -361,6 +364,16 @@ watch(newBrand, (newVal) => {
 </template>
 
 <style>
+    .auction-button-cancel{
+       display: flex; 
+       justify-content: center;
+       margin-top: 30px;
+       cursor: pointer;
+       color: red;
+       font-style: italic;
+       font-size: 15px;
+       
+    }
     .editCar-specifications input,select{
         margin-left: 60px;
         margin-bottom: 5px;
@@ -428,7 +441,7 @@ watch(newBrand, (newVal) => {
     font-style: normal;
 }
     .SellCarOptions{
-        margin-top: 120px;
+        margin-top: 40px;   
         display: flex;
     }
     .SellCarOptions button{

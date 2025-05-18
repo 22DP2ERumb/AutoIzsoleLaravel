@@ -52,9 +52,30 @@
 
             <div class="card-description">
                 <h3 class="car-title">{{car.brand.manufacturer}} {{car.model.model}}</h3>
+
+                <ul 
+                    v-if="car.auctions && car.auctions.is_active" 
+                    class="auction-badge" style="background-color: green;"
+                    >
+                    <li>AUCTION</li>
+                    <li>End date: <span>{{ car.auctions.end_time }}</span></li>
+                </ul>
+
+                <ul 
+                    v-if="car.auctions && !car.auctions.is_active" 
+                    class="auction-badge" style="background-color: #423d3e;"
+                    >
+                    <li>AUCTION</li>
+                    <li>Start date: <span>{{ car.auctions.start_time }}</span></li>
+                </ul>
+
+        
+                
                 <ul class="car-details">
                     <li>Year: {{ car.year }}</li>
                     <li>Mileage: {{ car.mileage }}km</li>
+                    
+                    <br>
                 </ul>
             </div>
             
@@ -67,6 +88,19 @@
     .delete-icon {
     color: white;
     transition: color 0.3s ease;
+}
+li{
+    
+}
+.auction-badge {
+  display: inline-block; /* bright red */
+  color: white;
+  font-weight: bold;
+  font-size: 0.85rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .delete-icon:hover {

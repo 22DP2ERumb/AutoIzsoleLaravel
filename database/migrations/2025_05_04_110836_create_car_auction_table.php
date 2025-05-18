@@ -9,7 +9,7 @@ return new class extends Migration
     
     public function up(): void
     {
-        Schema::create('car_acution', function (Blueprint $table) {
+        Schema::create('car_auction', function (Blueprint $table) {
             $table->id();
 
             $table->unsignedBigInteger('car_id');
@@ -21,6 +21,8 @@ return new class extends Migration
             $table->float('buyout_price');
             $table->float('bid_increment');
             $table->float('reserve_price');
+
+            $table->boolean('is_active');
             
             $table->date('start_time');
             $table->date(column: 'end_time');

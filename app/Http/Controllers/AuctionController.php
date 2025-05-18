@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Hash; 
 use Illuminate\Support\Facades\Validator;
+use Carbon\Carbon;
 
 class AuctionController extends Controller
 {
@@ -35,6 +36,11 @@ class AuctionController extends Controller
             ], 400);
         }
 
+        $isActive = Carbon::now()->between(
+            Carbon::parse($request->startTime),
+            Carbon::parse($request->endTime)
+        );
+
         $CarAuction = CarAuction::create([
             'car_id' => $request->car_id,
             'starting_price'=> $request->startingPrice,
@@ -44,6 +50,8 @@ class AuctionController extends Controller
 
             'start_time'=> $request->startTime,
             'end_time' => $request->endTime,
+            
+            'is_active'=> $isActive,
             
         ]);
 

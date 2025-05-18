@@ -86,7 +86,7 @@ Route::get('/getCar/{carId}', function ($carId) {
         return response()->json(['message' => 'User not authenticated'], 401);
     }
 
-    $car = Car::with(['images', 'brand', 'model'])
+    $car = Car::with(['images', 'brand', 'model', 'auctions'])
              ->where('user_id', $user->id)
              ->find($carId);
 

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Car; 
 use App\Models\CarBrand; 
+use App\Models\CarAuction; 
 use App\Models\Car_Images; 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -93,7 +94,7 @@ class CarController extends Controller
     public function GetProfileCars()
     {
         $cars = Car::where('user_id', Auth::id())
-                    ->with(['images', 'brand', 'model'])
+                    ->with(['images', 'brand', 'model', 'auctions'])
                     ->get();
 
 

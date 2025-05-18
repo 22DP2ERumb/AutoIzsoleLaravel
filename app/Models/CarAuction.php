@@ -9,7 +9,7 @@ class CarAuction extends Model
 {
     use HasFactory;
 
-    protected $table = 'car_acution'; // Explicitly define table name if it's not plural
+    protected $table = 'car_auction'; // Explicitly define table name if it's not plural
 
     protected $fillable = [
         'car_id',
@@ -19,6 +19,7 @@ class CarAuction extends Model
         'reserve_price',
         'start_time',
         'end_time',
+        'is_active',
     ];
 
     // If you want to treat start_time and end_time as Carbon instances (recommended)
