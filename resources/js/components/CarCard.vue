@@ -24,7 +24,7 @@
 
 <template>
     <div class="ProfileCarcard" :class="{ 'inactiveCar': !car.auctions.is_active }">
-        <RouterLink :to="`/profile/${car.id}`">
+        <RouterLink :to="`/auction/${car.id}`">
             <div class="image-container">
                 <img class="car-img" :src="car.images[currentImageIndex]?.image_path"></img>
 

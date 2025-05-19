@@ -134,3 +134,4 @@ Route::delete('/deleteAuction/{auctionId}', function ($auctionId) {
 });
 
 Route::get('/carAuctions', [CarController::class, 'GetAuctionCars']);
+

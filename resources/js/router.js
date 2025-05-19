@@ -29,6 +29,10 @@ const router = createRouter({
       name: 'profile',
       component: () => import('../js/views/ProfileView.vue'),
     },  
+    {
+      path: '/auction/:carid',
+      component: () => import('../js/views/AuctionView.vue'),
+    },  
   ],
 })
 
