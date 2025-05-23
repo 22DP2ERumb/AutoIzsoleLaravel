@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CarController;
 use App\Http\Controllers\AuctionController;
+use App\Http\Controllers\BidController;
 use App\Models\Car; 
 use App\Models\CarModel; 
 use App\Models\CarAuction;
@@ -134,4 +135,30 @@ Route::delete('/deleteAuction/{auctionId}', function ($auctionId) {
 });
 
 Route::get('/carAuctions', [CarController::class, 'GetAuctionCars']);
+
+Route::get('/getAuctionCar/{carId}', function ($carId) {
+    $car = Car::whereHas('auctions') // Only fetch if auctions exist
+              ->with(['images', 'brand', 'model', 'auctions'])
+              ->find($carId);
+
+    if (!$car) {
+        return response()->json(['message' => 'Car not found or has no auctions.'], 404);
+    }
+
+    // Add `url` attribute to each image
+    $car->images->each(function ($image) {
+        $image->url = $image->image_path;
+    });
+
+    return response()->json($car);
+});
+Route::get('/auction/{carid}', function () {
+    return view('welcome');
+});
+
+Route::post('/createBid', [BidController::class, 'CreateBid']);
+
+Route::get('/getUserBid', [BidController::class, 'GetUsersBids']);
+
+Route::get('/getBidData', [BidController::class, 'GetBidData']);
 

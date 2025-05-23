@@ -1,19 +1,11 @@
 <script setup>
-    import { ref, watch, onMounted } from 'vue'
-    import axios from 'axios'
-    import { useRouter } from 'vue-router';
+    import AuctionCar from './AuctionCar.vue'
 
-const props = defineProps({
-    carId: {
-        type: [Number, String],
-        required: true
-    }
-    })
 </script>
 
 <template>
     <div class="auctioncar-container">
-        JOJOJOJO
+        <AuctionCar/>
     </div>
 </template>
 

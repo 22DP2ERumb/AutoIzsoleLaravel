@@ -174,5 +174,13 @@ class CarController extends Controller
 
         return response()->json($cars);
     }
+    public function GetAuctionCarInfo(Request $request)
+    {
+        $cars = Car::whereHas('auctions') // just checks if there are any auctions
+                    ->with(['images', 'brand', 'model', 'auctions'])
+                    ->get();
+
+        return response()->json($cars);
+    }
     
 }

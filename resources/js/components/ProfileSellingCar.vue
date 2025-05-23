@@ -19,24 +19,24 @@
 
 
     const fetchCar = async () => {
-    try {
-        const response = await axios.get(`/getCar/${props.carId}`)
-        car.value = response.data
-        newBrand.value = car.value.brand.manufacturer
-        newModel.value = car.value.model.model
-        newYear.value = car.value.year
-        newMileage.value = car.value.mileage
-        newFuelType.value = car.value.fuel_type
-        newTransmission.value = car.value.transmission
-        newEngineSize.value = car.value.engine_size
-        newBodyType.value = car.value.body_type
-        newColor.value = car.value.color
+        try {
+            const response = await axios.get(`/getCar/${props.carId}`)
+            car.value = response.data
+            newBrand.value = car.value.brand.manufacturer
+            newModel.value = car.value.model.model
+            newYear.value = car.value.year
+            newMileage.value = car.value.mileage
+            newFuelType.value = car.value.fuel_type
+            newTransmission.value = car.value.transmission
+            newEngineSize.value = car.value.engine_size
+            newBodyType.value = car.value.body_type
+            newColor.value = car.value.color
 
 
-        const selectedBrand = response.data.brand;
-        if (selectedBrand && selectedBrand.id) {
-            getModels(selectedBrand.id);
-        }
+            const selectedBrand = response.data.brand;
+            if (selectedBrand && selectedBrand.id) {
+                getModels(selectedBrand.id);
+            }
 
     } catch {
         car.value = null
@@ -279,8 +279,7 @@ watch(newBrand, (newVal) => {
             </ul>
         </div>
         
-        <div class="SellCarOptions">
-
+        <div class="SellCarOptions" v-if="car && car.auctions !== undefined">
             <button 
                 v-if="!car.auctions || !car.auctions.is_active"
                 @click="AuctionCar = true">

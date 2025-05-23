@@ -39,8 +39,8 @@
                     <li>Year: {{ car.year }}</li>
                     <li>Mileage: {{ car.mileage }}km</li>
                     <br>
-                    <li v-if="car.auctions.is_active" style="color: red;">End date: <span>{{ car.auctions.end_time }}</span></li>
-                    <li v-if="!car.auctions.is_active" style="color: green;">Start date: <span>{{ car.auctions.start_time }}</span></li>
+                    <li v-if="car.auctions.is_active" style="color: green;">End date: <span>{{ car.auctions.end_time }}</span></li>
+                    <li v-if="!car.auctions.is_active" style="color: red;">Start date: <span>{{ car.auctions.start_time }}</span></li>
                     
                     <br>
                 </ul>
