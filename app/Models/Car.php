@@ -9,6 +9,11 @@ class Car extends Model
 {
     use HasFactory;
 
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
     // Define the relationship with the CarImage model
     public function images()
     {

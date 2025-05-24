@@ -9,9 +9,37 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Hash; 
 use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
+use App\Models\Comment; 
 
 class AuctionController extends Controller
 {
+    public function storeComment(Request $request)
+    {
+        if (!auth()->check()) {
+        return response()->json(['message' => 'Not authenticated'], 401);
+    }
+        $request->validate([
+            'auction_id' => 'required|exists:car_auction,id',
+            'rating' => 'required|integer|min:1|max:5',
+            'comment' => 'required|string|max:1000',
+        ]);
+
+        $userId = auth()->id();
+
+        $existing = Comment::where('user_id', $userId)->where('auction_id', $request->auction_id)->first();
+        if ($existing) {
+            return response()->json(['message' => 'You already left a comment for this auction.'], 400);
+        }
+
+        $comment = Comment::create([
+            'user_id' => $userId,
+            'auction_id' => $request->auction_id,
+            'rating' => $request->rating,
+            'comment' => $request->comment,
+        ]);
+
+        return response()->json($comment);
+    }
     public function StartAuctionPost(Request $request)
     {
         // larvale.log for debugging

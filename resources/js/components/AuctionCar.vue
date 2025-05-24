@@ -27,7 +27,14 @@ const fetchCar = async () => {
   if (!carId.value) return;
   try {
     const response = await axios.get(`/getAuctionCar/${carId.value}`);
-    cardata.value = response.data;
+    console.log('Car data:', response.data);
+
+    const { car, averageRating } = response.data;
+
+    // Inject averageRating manually into the car object for easy access
+    car.averageRating = averageRating;
+
+    cardata.value = car;
     currentImageIndex.value = 0;
   } catch (error) {
     console.error('Failed to fetch auction car:', error);
@@ -60,7 +67,8 @@ const bidIncrements = computed(() => {
 onMounted(() => {
   fetchCar();
   fetchBidStats();
-  fetchUserBid(); // new
+  fetchUserBid();
+  fetchComments(); // <-- Add this
 });
 
 watch(() => route.params.carid, (newCarId) => {
@@ -103,10 +111,58 @@ const submitBid = async () => {
     alert(error.response?.data?.message || 'Failed to submit bid.');
   }
 };
+const newComment = ref({ rating: 5, comment: '' });
+
+const commentForm = ref({
+  rating: 5,
+  comment: ''
+});
+const comments = ref([]);
+const hasCommented = ref(false);
+
+const fetchComments = async () => {
+  try {
+    const res = await axios.get(`/comments/${carId.value}`);
+    comments.value = res.data.comments;
+    hasCommented.value = res.data.hasCommented;
+  } catch (err) {
+    console.error('Failed to fetch comments:', err);
+  }
+};
+
+const submitComment = async () => {
+  try {
+    const res = await axios.post('/auction/comment', {
+      auction_id: carId.value,
+      rating: commentForm.value.rating,
+      comment: commentForm.value.comment
+    });
+    alert('Comment submitted!');
+    commentForm.value.comment = '';
+    fetchComments();
+    hasCommented.value = true;
+  } catch (err) {
+    alert(err.response?.data?.message || 'Failed to submit comment');
+  }
+};
 
 function increaseBid(amount) {
   yourBid.value += amount;
 }
+function renderStars(rating) {
+  if (!rating) rating = 0;
+  const fullStars = Math.floor(rating);
+  const halfStar = rating % 1 >= 0.5;
+  const emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
+
+  let starsHtml = '';
+  for (let i = 0; i < fullStars; i++) starsHtml += '★';
+  if (halfStar) starsHtml += '½'; // you can replace with half star icon if available
+  for (let i = 0; i < emptyStars; i++) starsHtml += '☆';
+
+  return starsHtml;
+}
+
 </script>
 
 
@@ -121,9 +177,13 @@ function increaseBid(amount) {
       <h2 v-if="cardata.auctions.is_active" style="color: green;">End date: {{ cardata.auctions.end_time }}</h2>
       <h2 v-if="!cardata.auctions.is_active" style="color: red;">Start date: {{ cardata.auctions.start_time }}</h2>
 
-      <div class="seller-data">
-        <span><strong>Name:</strong> Seller Name</span>
-        <span><strong>Review:</strong> ★★★★☆</span>
+      <div class="seller-data" v-if="cardata && cardata.user">
+        <span><strong>Name:</strong> {{ cardata.user.name }}</span>
+        <span>
+          <strong>Review:</strong>
+          <span v-html="renderStars(cardata.averageRating)"></span>
+          ({{ cardata.averageRating || '0' }})
+        </span>
       </div>
     </div>
 
@@ -131,10 +191,33 @@ function increaseBid(amount) {
       <div class="auction-options">
         <button @click="setInfo('auction')"><i class="pi pi-dollar"></i></button>
         <button @click="setInfo('carinfo')"><i class="pi pi-info"></i></button>
-        <button @click="setInfo('id-card')"><i class="pi pi-id-card"></i></button>
+        <button @click="setInfo('car-comment')"><i class="pi pi-id-card"></i></button>
       </div>
 
       <div class="auction-right-info">
+        <div v-if="chooseInfo === 'car-comment'" class="comment-wrapper">
+          <h3>Leave a Comment</h3>
+          <div v-if="!hasCommented" class="comment-form">
+            <label>Rating:</label>
+            <select v-model="commentForm.rating">
+              <option v-for="n in 5" :key="n" :value="n">{{ n }} ★</option>
+            </select>
+
+            <label>Comment:</label>
+            <textarea v-model="commentForm.comment" rows="4" maxlength="1000" placeholder="Write your thoughts here..."></textarea>
+
+            <button @click="submitComment">Submit</button>
+          </div>
+          <div v-else class="already-commented">You already left a comment for this auction.</div>
+
+          <h3>Comments</h3>
+          <div class="comments-list">
+            <div class="comment" v-for="(c, i) in comments" :key="i">
+              <div class="rating">Rating: {{ c.rating }} ★</div>
+              <div class="text">{{ c.comment }}</div>
+            </div>
+          </div>
+        </div>
         <div v-if="chooseInfo === 'auction'" class="auction-bid-data">
           <h3>Bid Info</h3>
           <div class="bid-info">
@@ -179,10 +262,70 @@ function increaseBid(amount) {
       </div>
     </div>
   </div>
+
 </template>
 
 
 <style>
+.comment-wrapper {
+  background: #fff;
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  margin-top: 20px;
+}
+
+.comment-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.comment-form select,
+.comment-form textarea {
+  padding: 8px;
+  border-radius: 5px;
+  border: 1px solid #aaa;
+  font-size: 1rem;
+}
+
+.comment-form button {
+  align-self: start;
+  padding: 10px 15px;
+  border: none;
+  background: #28a745;
+  color: #fff;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.comment-form button:hover {
+  background: #218838;
+}
+
+.already-commented {
+  color: #888;
+  font-style: italic;
+  margin-bottom: 15px;
+}
+
+.comments-list {
+  margin-top: 20px;
+}
+
+.comment {
+  border-top: 1px solid #ccc;
+  padding: 10px 0;
+}
+
+.comment:first-child {
+  border-top: none;
+}
+
+.comment .rating {
+  font-weight: bold;
+  margin-bottom: 5px;
+}
 .comment-section {
   margin-top: 20px;
   background-color: #fff;
