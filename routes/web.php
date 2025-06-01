@@ -9,6 +9,7 @@ use App\Models\Car;
 use App\Models\CarModel; 
 use App\Models\CarAuction;
 use App\Models\Comment; 
+use Illuminate\Http\Request;
 
 Route::get('/', function () {
     return view(view: 'welcome');
@@ -205,4 +206,59 @@ Route::get('/comments/{auction_id}', function ($auction_id) {
         'comments' => $comments,
         'hasCommented' => $hasCommented,
     ]);
+});
+Route::get('/filteredCars', function (Request $request) {
+    $query = Car::whereHas('auctions')
+                ->with(['images', 'brand', 'model', 'auctions']);
+
+    // Apply brand filter if provided
+    if ($request->has('brand_id') && $request->brand_id != 'all') {
+        $query->where('car_brand_id', $request->brand_id);
+        Log::info('Fetching car with brand_id:', ['brand_id' => $request->brand_id]);
+    }
+
+    // Apply model filter if provided
+    if ($request->has('model_id') && $request->model_id != 'all') {
+        $query->where('car_model_id', $request->model_id);
+    }
+
+    // Apply search query if provided
+    if ($request->has('search')) {
+        $search = $request->search;
+        $query->where(function($q) use ($search) {
+            $q->whereHas('brand', function($q) use ($search) {
+                $q->where('manufacturer', 'like', "%{$search}%");
+            })->orWhereHas('model', function($q) use ($search) {
+                $q->where('model', 'like', "%{$search}%");
+            });
+        });
+    }
+
+    // Apply sorting if provided
+    if ($request->has('sort_by')) {
+        switch ($request->sort_by) {
+            case 'year_asc':
+                $query->orderBy('year', direction: 'asc');
+                break;
+            case 'year_desc':
+                $query->orderBy('year', 'desc');
+                break;
+            case 'mileage_asc':
+                $query->orderBy('mileage', 'asc');
+                break;
+            case 'mileage_desc':
+                $query->orderBy('mileage', 'desc');
+                break;
+            default:
+                // Default sorting (if needed)
+                $query->orderBy('created_at', 'desc');
+        }
+    } else {
+        // Default sorting if no sort parameter is provided
+        $query->orderBy('created_at', 'desc');
+    }
+
+    $cars = $query->get();
+
+    return response()->json($cars);
 });

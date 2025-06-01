@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('car_brands', function (Blueprint $table) {
             $table->id();
-            $table->string('manufacturer');
+            $table->string(column: 'manufacturer');
             $table->string('image_path');
             $table->timestamps();
         });
