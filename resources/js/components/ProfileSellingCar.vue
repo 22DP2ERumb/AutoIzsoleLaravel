@@ -1,481 +1,654 @@
 <script setup>
-    import { ref, watch, onMounted } from 'vue'
-    import axios from 'axios'
-    import ProfileCar from './ProfileCar.vue'
-    import { useRouter } from 'vue-router';
+import { ref, watch, onMounted } from 'vue'
+import axios from 'axios'
+import ProfileCar from './ProfileCar.vue'
+import { useRouter } from 'vue-router';
 
-    const router = useRouter();
-    const props = defineProps({
-    carId: {
-        type: [Number, String],
-        required: true
-    }
-    })
+const router = useRouter();
+const props = defineProps({
+  carId: {
+    type: [Number, String],
+    required: true
+  }
+})
 
-    const car = ref(null)
-    const AuctionCar = ref(false)
-    const editCar = ref(false)
+// Car Data
+const car = ref(null)
+const AuctionCar = ref(false)
+const editCar = ref(false)
 
+// Auction Form
+const startingPrice = ref(0)
+const buyOutPrice = ref(0)
+const bidIncrement = ref(0)
+const reservePrice = ref(0)
+const startTime = ref(new Date().toISOString().split('T')[0])
+const endTime = ref(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0])
 
+// Edit Form
+const brands = ref([])
+const models = ref([])
+const error = ref('')
 
-    const fetchCar = async () => {
-        try {
-            const response = await axios.get(`/getCar/${props.carId}`)
-            car.value = response.data
-            newBrand.value = car.value.brand.manufacturer
-            newModel.value = car.value.model.model
-            newYear.value = car.value.year
-            newMileage.value = car.value.mileage
-            newFuelType.value = car.value.fuel_type
-            newTransmission.value = car.value.transmission
-            newEngineSize.value = car.value.engine_size
-            newBodyType.value = car.value.body_type
-            newColor.value = car.value.color
+const newBrand = ref('')
+const newModel = ref('')
+const newYear = ref('')
+const newMileage = ref('')
+const newFuelType = ref('')
+const newTransmission = ref('')
+const newEngineSize = ref('')
+const newBodyType = ref('')
+const newColor = ref('')
 
-
-            const selectedBrand = response.data.brand;
-            if (selectedBrand && selectedBrand.id) {
-                getModels(selectedBrand.id);
-            }
-
-    } catch {
-        car.value = null
-        newBrand.value = ''
-    }
-    }
-
-    watch(() => props.carId, fetchCar, { immediate: true })
-    onMounted(async () => {
-        
-        try {
-            const response = await axios.get('/allCarBrands')
-            brands.value = response.data
-        } catch (error) {
-            console.error('Error fetching car brands:', error)
-        }
-    })
-
-    const startingPrice = ref(0.0);
-    const buyOutPrice = ref(0.0);
-    const bidIncrement = ref(0.0);
-    const reservePrice = ref(0.0);
-
-    const startTime = ref(new Date().toLocaleDateString('sv-SE'));
-    const endTime = ref(new Date().toLocaleDateString('sv-SE'));
-
-    const error = ref('')
-
-    const brands = ref([])
-
-    const models = ref([])
-
-    const getModels = async (brandId) => {
-    try {
-        const response = await axios.get(`/getModelsByBrand/${brandId}`)
-        models.value = response.data
-    } catch (error) {
-        console.error('Error fetching car models:', error)
-    }}
-
-
-
-    const newBrand = ref();
-    const newModel = ref();
-    const newYear = ref();
-    const newMileage = ref();
-    const newFuelType = ref();
-    const newTransmission = ref();
-    const newEngineSize = ref();
-    const newBodyType = ref();
-    const newColor = ref();
-
+// Fetch car data
+const fetchCar = async () => {
+  try {
+    const response = await axios.get(`/getCar/${props.carId}`)
+    car.value = response.data
     
-    const EditCar = async () => {
-    if (!validateNewValues()) return;
+    // Set form values
+    newBrand.value = car.value.brand.manufacturer
+    newModel.value = car.value.model.model
+    newYear.value = car.value.year
+    newMileage.value = car.value.mileage
+    newFuelType.value = car.value.fuel_type
+    newTransmission.value = car.value.transmission
+    newEngineSize.value = car.value.engine_size
+    newBodyType.value = car.value.body_type
+    newColor.value = car.value.color
 
-    try {
-        // Make sure the values are passed correctly, especially for brand and model
-        await axios.post('/updateCar', {
-            car_id: car.value.id, // Ensure car_id is being sent
-            car_brand: newBrand.value, // Ensure this value is correctly passed
-            car_model: newModel.value, // Ensure this value is correctly passed
-            year: newYear.value,
-            mileage: newMileage.value,
-            fuel_type: newFuelType.value,
-            transmission: newTransmission.value,
-            engine_size: newEngineSize.value.toString(), // Ensure engine size is passed as a string
-            body_type: newBodyType.value,
-            color: newColor.value,
-        });
-
-        // Reload the page to reflect the updated data
-        window.location.reload(); // This will reload the current page
-
-    } catch (error) {
-        console.error("Error updating car:", error);
-        // Optionally, handle the error to show a user-friendly message
+    // Get models for the car's brand
+    if (car.value.brand?.id) {
+      await getModels(car.value.brand.id)
     }
-};
+  } catch {
+    car.value = null
+  }
+}
 
+// Fetch brands
+const fetchBrands = async () => {
+  try {
+    const response = await axios.get('/allCarBrands')
+    brands.value = response.data
+  } catch (error) {
+    console.error('Error fetching car brands:', error)
+  }
+}
+
+// Fetch models for brand
+const getModels = async (brandId) => {
+  try {
+    const response = await axios.get(`/getModelsByBrand/${brandId}`)
+    models.value = response.data
+  } catch (error) {
+    console.error('Error fetching car models:', error)
+  }
+}
+
+
+// Watch for brand changes
 watch(newBrand, (newVal) => {
-    const selectedBrand = brands.value.find(b => b.manufacturer === newVal);
-    if (selectedBrand) {
-        // Fetch models for the selected brand
-        getModels(selectedBrand.id)
-            .then(() => {
-                // Reset newModel to null or to the first model (if desired)
-                newModel.value = null; // Clears the previously selected model
-            })
-            .catch(error => {
-                console.error('Error fetching models:', error);
-            });
-    }
-});
-        
-        const validateNewValues = () => {
-        if (!newBrand.value || !newModel.value) {
-            error.value = 'Brand and Model are required';
-            return false;
-        }
-        if (!newYear.value || newYear.value < 1886 || newYear.value > new Date().getFullYear() + 1) {
-            error.value = 'Invalid year';
-            return false;
-        }
-        if (newMileage.value < 0) {
-            error.value = 'Mileage cannot be negative';
-            return false;
-        }
-        if (!newFuelType.value) {
-            error.value = 'Fuel type is required';
-            return false;
-        }
-        if (!newTransmission.value) {
-            error.value = 'Transmission is required';
-            return false;
-        }
-        if (newEngineSize.value < 0) {
-            error.value = 'Engine size cannot be negative';
-            return false;
-        }
-        if (!newBodyType.value || !newColor.value) {
-            error.value = 'Body type and color are required';
-            return false;
-        }
+  const selectedBrand = brands.value.find(b => b.manufacturer === newVal)
+  if (selectedBrand) {
+    getModels(selectedBrand.id)
+  }
+})
 
-        error.value = '';
-        return true;
-    }
+// Form validation
+const validateNewValues = () => {
+  if (!newBrand.value || !newModel.value) {
+    error.value = 'Brand and Model are required'
+    return false
+  }
+  if (!newYear.value || newYear.value < 1886 || newYear.value > new Date().getFullYear() + 1) {
+    error.value = 'Invalid year'
+    return false
+  }
+  if (newMileage.value < 0) {
+    error.value = 'Mileage cannot be negative'
+    return false
+  }
+  if (!newFuelType.value) {
+    error.value = 'Fuel type is required'
+    return false
+  }
+  if (!newTransmission.value) {
+    error.value = 'Transmission is required'
+    return false
+  }
+  if (newEngineSize.value < 0) {
+    error.value = 'Engine size cannot be negative'
+    return false
+  }
+  if (!newBodyType.value || !newColor.value) {
+    error.value = 'Body type and color are required'
+    return false
+  }
+  error.value = ''
+  return true
+}
 
+const validateAuction = () => {
+  if (!car.value?.id) {
+    error.value = 'CarID is required'
+    return false
+  }
+  if (startingPrice.value < 0) {
+    error.value = 'Starting price cannot be lower than 0'
+    return false
+  }
+  if (buyOutPrice.value < 0) {
+    error.value = 'Buy Out price cannot be lower than 0'
+    return false
+  }
+  if (buyOutPrice.value < startingPrice.value) {
+    error.value = 'Buy Out price cannot be lower than starting price'
+    return false
+  }
+  if (bidIncrement.value < 0) {
+    error.value = 'Bid Increment cannot be lower than 0'
+    return false
+  }
+  if (reservePrice.value < 0) {
+    error.value = 'Reserve Price cannot be lower than 0'
+    return false
+  }
+  if (reservePrice.value < startingPrice.value) {
+    error.value = 'Reserve Price cannot be lower than Starting Price'
+    return false
+  }
+  if (reservePrice.value > buyOutPrice.value) {
+    error.value = 'Reserve Price cannot be higher than Buy Out Price'
+    return false
+  }
+  if (!startTime.value || !endTime.value) {
+    error.value = 'Start and End dates are required'
+    return false
+  }
+  if (new Date(startTime.value) < new Date()) {
+    error.value = 'Start time cannot be in the past'
+    return false
+  }
+  if (new Date(endTime.value) <= new Date(startTime.value)) {
+    error.value = 'End time must be after start time'
+    return false
+  }
+  error.value = ''
+  return true
+}
 
+// Form submissions
+const EditCar = async () => {
+  if (!validateNewValues()) return
 
+  try {
+    await axios.post('/updateCar', {
+      car_id: car.value.id,
+      car_brand: newBrand.value,
+      car_model: newModel.value,
+      year: newYear.value,
+      mileage: newMileage.value,
+      fuel_type: newFuelType.value,
+      transmission: newTransmission.value,
+      engine_size: newEngineSize.value.toString(),
+      body_type: newBodyType.value,
+      color: newColor.value,
+    })
+    window.location.reload()
+  } catch (error) {
+    console.error("Error updating car:", error)
+    error.value = 'Failed to update car. Please try again.'
+  }
+}
 
-    const StartAuction = async () => {
-        if (!validateAuction()) return
+const StartAuction = async () => {
+  if (!validateAuction()) return
 
+  try {
+    await axios.post('/AuctionCar', {
+      car_id: car.value.id,
+      startingPrice: startingPrice.value,
+      buyOutPrice: buyOutPrice.value,
+      bidIncrement: bidIncrement.value,
+      reservePrice: reservePrice.value,
+      startTime: startTime.value,
+      endTime: endTime.value,
+    })
+    router.push({ path: '/profile' })
+  } catch (error) {
+    console.error(error)
+    error.value = 'Failed to start auction. Please try again.'
+  }
+}
 
-        try {
-            
-            await axios.post('/AuctionCar', {
-            car_id: car.value.id,
-            startingPrice: startingPrice.value,
-            buyOutPrice: buyOutPrice.value,
-            bidIncrement: bidIncrement.value,
-            reservePrice: reservePrice.value,
+// Initialize
+watch(() => props.carId, fetchCar, { immediate: true })
+onMounted(fetchBrands)
 
-            startTime: startTime.value,
-            endTime: endTime.value,
-
-            });
-
-            startingPrice.value = 0.0;
-            buyOutPrice.value = 0.0;
-            bidIncrement.value = 0.0;
-            reservePrice.value = 0.0;
-
-            startTime.value = new Date().toLocaleDateString('sv-SE');
-            endTime.value = new Date().toLocaleDateString('sv-SE');
-
-
-            router.push({ path: '/profile'});
-        } catch (error) {
-            console.error(error);
-        }
-    };
-    const validateAuction = () => {
-        if (!car.value.id) {
-            error.value = 'CarID is required'
-            return false
-        }
-        if (startingPrice.value < 0) {
-            error.value = 'Starting price cant be lower than 0'
-            return false
-        }
-        if (buyOutPrice.value < 0) {
-            error.value = 'Buy Out price cant be lower than 0'
-            return false
-        }
-        if (buyOutPrice.value < startingPrice.value) {
-            error.value = 'Buy Out price cant be lower than starting price'
-            return false
-        }
-        if (bidIncrement.value < 0) {
-            error.value = 'Bid Increment cant be lower than 0'
-            return false
-        }
-        if (reservePrice.value < 0) {
-            error.value = 'Reserve Price cant be lower than 0'
-            return false
-        }
-        if (reservePrice.value < startingPrice.value) {
-            error.value = 'Reserve Price cant be lower than Starting Price'
-            return false
-        }
-        if (reservePrice.value > buyOutPrice.value) {
-            error.value = 'Reserve Price cant be higher than Buy Out Price'
-            return false
-        }
-        if (!startTime.value || !endTime.value) {
-            error.value = 'Start and End dates are required';
-            return false;
-        }
-
-        if (new Date(startTime.value) < new Date().toLocaleDateString('sv-SE')) {
-            error.value = 'Start time cannot be in the past';
-            return false;
-        }
-
-        if (new Date(endTime.value) <= new Date(startTime.value)) {
-            error.value = 'End time must be after start time';
-            return false;
-        }
-        
-
-        error.value = ''
-        return true
-        }
 </script>
 
 <template>
-  <div class="SellCar-selection">
-    <ProfileCar v-if="car" :car="car" @click="AuctionCar = false; editCar = false" />
+  <div class="selling-car-container">
+    <!-- Car Preview -->
+    <div class="car-preview">
+      <ProfileCar v-if="car" :car="car" @click="AuctionCar = false; editCar = false" />
+    </div>
 
-    
-    
-
-    <div class="SellCar-specifications" v-if="!AuctionCar && !editCar">
-        <div class="car-specifications">
-            <ul>
-                <i class="pi pi-cog editcarcog" v-if="!AuctionCar" @click="editCar=true"></i>
-                <li>Brand: <span>{{ car?.brand.manufacturer }}</span> </li>
-                <li>Model: <span>{{ car?.model.model }}</span> </li>
-                <li>Year: <span>{{ car?.year }}</span> </li>
-                <li>Mileage: <span>{{ car?.mileage }}</span> </li>
-                <li>Fuel Type: <span>{{ car?.fuel_type }}</span> </li>
-                <li>Transmission: <span>{{ car?.transmission }}</span> </li>
-                <li>Engine Size: <span>{{ car?.engine_size }}</span> </li>
-                <li>Body Type: <span>{{ car?.body_type }}</span> </li>
-                <li>Color: <span>{{ car?.color }}</span> </li>
-                
-            </ul>
+    <!-- Main Content -->
+    <div class="car-details-container">
+      <!-- View Mode -->
+      <div v-if="!AuctionCar && !editCar" class="view-mode">
+        <div class="specifications-card">
+          <h3>Car Specifications</h3>
+          <i class="pi pi-pencil edit-icon" @click="editCar = true"></i>
+          
+          <div class="specs-grid">
+            <div class="spec-item">
+              <span class="spec-label">Brand:</span>
+              <span class="spec-value">{{ car?.brand.manufacturer }}</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-label">Model:</span>
+              <span class="spec-value">{{ car?.model.model }}</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-label">Year:</span>
+              <span class="spec-value">{{ car?.year }}</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-label">Mileage:</span>
+              <span class="spec-value">{{ car?.mileage?.toLocaleString() }} km</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-label">Fuel Type:</span>
+              <span class="spec-value">{{ car?.fuel_type }}</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-label">Transmission:</span>
+              <span class="spec-value">{{ car?.transmission }}</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-label">Engine Size:</span>
+              <span class="spec-value">{{ car?.engine_size }}</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-label">Body Type:</span>
+              <span class="spec-value">{{ car?.body_type }}</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-label">Color:</span>
+              <span class="spec-value">{{ car?.color }}</span>
+            </div>
+          </div>
         </div>
-        
-        <div class="SellCarOptions" v-if="car && car.auctions !== undefined">
-            <button 
-                v-if="!car.auctions || !car.auctions.is_active"
-                @click="AuctionCar = true">
-                List for Auction
+
+        <!-- Auction Controls -->
+        <div class="auction-controls">
+          <button 
+            v-if="!car?.auctions?.is_active"
+            class="auction-btn list-btn"
+            @click="AuctionCar = true">
+            List for Auction
+          </button>
+          <button 
+            v-if="car?.auctions?.is_active"
+            class="auction-btn cancel-btn"
+            @click="AuctionCar = true">
+            Manage Auction
+          </button>
+        </div>
+      </div>
+
+      <!-- Edit Mode -->
+      <div v-if="editCar && !AuctionCar" class="edit-mode">
+        <div class="edit-form">
+          <h3>Edit Car Details</h3>
+          
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Brand</label>
+              <select v-model="newBrand" class="form-input">
+                <option v-for="brand in brands" :key="brand.id" :value="brand.manufacturer">
+                  {{ brand.manufacturer }}
+                </option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Model</label>
+              <select v-model="newModel" class="form-input">
+                <option v-for="model in models" :key="model.id" :value="model.model">
+                  {{ model.model }}
+                </option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Year</label>
+              <input type="number" v-model="newYear" class="form-input" />
+            </div>
+
+            <div class="form-group">
+              <label>Mileage (km)</label>
+              <input type="number" v-model="newMileage" class="form-input" />
+            </div>
+
+            <div class="form-group">
+              <label>Fuel Type</label>
+              <select v-model="newFuelType" class="form-input">
+                <option value="Petrol">Petrol</option>
+                <option value="Diesel">Diesel</option>
+                <option value="Electric">Electric</option>
+                <option value="Hybrid">Hybrid</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Transmission</label>
+              <select v-model="newTransmission" class="form-input">
+                <option value="Manual">Manual</option>
+                <option value="Automatic">Automatic</option>
+                <option value="CVT">CVT</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Engine Size (L)</label>
+              <input type="number" step="0.1" v-model="newEngineSize" class="form-input" />
+            </div>
+
+            <div class="form-group">
+              <label>Body Type</label>
+              <input type="text" v-model="newBodyType" class="form-input" />
+            </div>
+
+            <div class="form-group">
+              <label>Color</label>
+              <input type="text" v-model="newColor" class="form-input" />
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button class="cancel-btn" @click="editCar = false">Cancel</button>
+            <button class="save-btn" @click="EditCar">Save Changes</button>
+          </div>
+          
+          <p v-if="error" class="error-message">{{ error }}</p>
+        </div>
+      </div>
+
+      <!-- Auction Mode -->
+      <div v-if="AuctionCar && !editCar" class="auction-mode">
+        <div class="auction-form">
+          <h3>{{ car?.auctions?.is_active ? 'Manage Auction' : 'Create Auction' }}</h3>
+          
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Starting Price (€)</label>
+              <input type="number" v-model="startingPrice" class="form-input" min="0" />
+            </div>
+
+            <div class="form-group">
+              <label>Buy Out Price (€)</label>
+              <input type="number" v-model="buyOutPrice" class="form-input" min="0" />
+            </div>
+
+            <div class="form-group">
+              <label>Bid Increment (€)</label>
+              <input type="number" v-model="bidIncrement" class="form-input" min="0" />
+            </div>
+
+            <div class="form-group">
+              <label>Reserve Price (€)</label>
+              <input type="number" v-model="reservePrice" class="form-input" min="0" />
+            </div>
+
+            <div class="form-group">
+              <label>Start Date</label>
+              <input type="date" v-model="startTime" class="form-input" :min="new Date().toISOString().split('T')[0]" />
+            </div>
+
+            <div class="form-group">
+              <label>End Date</label>
+              <input type="date" v-model="endTime" class="form-input" :min="startTime" />
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button class="cancel-btn" @click="AuctionCar = false">Cancel</button>
+            <button class="save-btn" @click="StartAuction">
+              {{ car?.auctions?.is_active ? 'Update Auction' : 'Start Auction' }}
             </button>
-
-            <button 
-                v-if="car.auctions && car.auctions.is_active"
-                style="border-color: red;">
-                Cancel Auction
-            </button>
+          </div>
+          
+          <p v-if="error" class="error-message">{{ error }}</p>
         </div>
-
+      </div>
     </div>
-
-    <div class="editCar-specifications" v-if="editCar && !AuctionCar">
-  <div class="car-specifications">
-    <ul>
-        <li>
-            Brand:
-            <select v-model="newBrand">
-            <option disabled value="">{{ car?.brand.manufacturer }}</option>
-            <option v-for="brand in brands" :key="brand.id" :value="brand.manufacturer">
-                {{ brand.manufacturer }}
-            </option>
-            </select>
-        </li>
-
-        <li>
-            Model:
-            <select v-model="newModel">
-            <option disabled value="">{{ car?.model.model }}</option>
-            <option v-for="model in models" :key="model.id" :value="model.model">
-                {{ model.model }}
-            </option>
-            </select>
-        </li>
-
-        <li>Year: <input type="number" v-model="newYear" /></li>
-        <li>Mileage: <input type="number" v-model="newMileage" /></li>
-
-        <li>
-            Fuel Type:
-            <select v-model="newFuelType">
-            <option disabled value="">{{ car?.fuel_type }}</option>
-            <option value="Petrol">Petrol</option>
-            <option value="Diesel">Diesel</option>
-            <option value="Electric">Electric</option>
-            <option value="Hybrid">Hybrid</option>
-            </select>
-        </li>
-
-        <li>
-            Transmission:
-            <select v-model="newTransmission">
-            <option disabled value="">{{ car?.transmission }}</option>
-            <option value="Manual">Manual</option>
-            <option value="Automatic">Automatic</option>
-            <option value="CVT">CVT</option>
-            </select>
-        </li>
-
-        <li>Engine Size: <input type="number" step="0.1" v-model="newEngineSize" /></li>
-        <li>Body Type: <input type="text" v-model="newBodyType" /></li>
-        <li>Color: <input type="text" v-model="newColor" /></li>
-
-        <button @click="EditCar()">EDIT</button>
-        <p v-if="error" class="auction-car-error-message">{{ error }}</p>
-        </ul>
-    </div>
-</div>
-
-    <div class="AuctionCar-specifications" v-if="AuctionCar && !editCar">
-        <div class="car-specifications">
-            <ul>
-                <li>Starting Price: <input type="number" v-model="startingPrice"> </li>
-                <li>Buy Out Price: <input type="number" v-model="buyOutPrice"> </li>
-                <li>Bid Increment: <input type="number" v-model="bidIncrement"> </li>
-                <li>Reserve Price: <input type="number" v-model="reservePrice"> </li>
-                <li>Auction Start Time: <input type="date" v-model="startTime"> </li>
-                <li>Auction End Time: <input type="date" v-model="endTime"> </li>
-                <button @click="StartAuction()">Start Auction</button>
-                <p v-if="error" class="auction-car-error-message">{{ error }}</p>
-            </ul>
-        </div>
-
-    </div>
-    
   </div>
 </template>
 
-<style>
-    .auction-button-cancel{
-       display: flex; 
-       justify-content: center;
-       margin-top: 30px;
-       cursor: pointer;
-       color: red;
-       font-style: italic;
-       font-size: 15px;
-       
-    }
-    .editCar-specifications input,select{
-        margin-left: 60px;
-        margin-bottom: 5px;
-        height: 25px;
-        border-radius: 10px;
-        text-align: center;
-        font-weight: bold;
-    }
-    .editcarcog{
-        font-size: 20px;
-        cursor: pointer;
-        margin-left: 380px;
-    }
-    .auction-car-error-message{
-        color: red;
-        font-size: 14px;
-        margin: 4px 0 0 0;
-    }
-    .AuctionCar-specifications button{
-        margin-top: 50px;
-        border: green solid 2px;
-        border-radius: 10px;
-        width: 200px;
-        height: 65px;
-        transition: background-color 0.2s;
-        font-weight: bold;
-    }
-    .AuctionCar-specifications button:hover{
-        background-color: grey;
-    }
-    .car-specifications, .AuctionCar-specifications, .editCar-specifications {
-        margin: 0 auto;
-        text-align: center;
-    }
-    .AuctionCar-specifications input{
-        margin-left: 60px;
-        margin-bottom: 5px;
-        height: 25px;
-        border-radius: 10px;
-        text-align: center;
-        font-weight: bold;
-    }
-    .car-specifications ul {
-        margin: 30px auto 0 auto;
-        width: 400px;
-    }
-    .car-specifications li {
-        position: relative;
-        margin: 20px auto;
-        border-bottom: 1px solid black;
-        width: 400px;
-        text-align: left;
-        font-style: italic;
-    }
-
-    .car-specifications li {
-    display: flex;
-    justify-content: space-between;
-    font-style: italic;
+<style scoped>
+.selling-car-container {
+  display: flex;
+  gap: 30px;
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
-.car-specifications li span {
-    position: static; /* remove absolute positioning */
-    font-weight: bold;
-    font-style: normal;
+.car-preview {
+  flex: 0 0 350px;
 }
-    .SellCarOptions{
-        margin-top: 40px;   
-        display: flex;
-    }
-    .SellCarOptions button{
-        width: 200px;
-        height: 65px;
-        margin-inline: 60px;
-        border-radius: 15px;
-        border: 2px solid green;
-        transition: background-color 0.4s;
-        font-weight: bold;
-    }
-    .SellCarOptions button:hover{
-        background-color: grey;
-    }
-    .SellCar-selection{
-        width: 100%;
-        height: 100%;
-        margin: 20px;
-        margin-left: 60px;
-        display: flex;
-    }
-    .SellCar-selection .ProfileCarcard{
-        width: 30%;
-        height: 90%;
-    }
-    .SellCar-selection .ProfileCarcard:hover{
-        transform: scale(1.02);
-    }
+
+.car-details-container {
+  flex: 1;
+}
+
+/* View Mode */
+.view-mode {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.specifications-card {
+  background: white;
+  border-radius: 12px;
+  padding: 25px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  position: relative;
+}
+
+.specifications-card h3 {
+  margin-top: 0;
+  color: #333;
+  font-size: 1.4rem;
+}
+
+.edit-icon {
+  position: absolute;
+  top: 25px;
+  right: 25px;
+  font-size: 1.2rem;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.edit-icon:hover {
+  color: #4361ee;
+  transform: scale(1.1);
+}
+
+.specs-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.spec-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.spec-label {
+  font-weight: 500;
+  color: #666;
+}
+
+.spec-value {
+  font-weight: 600;
+  color: #333;
+}
+
+.auction-controls {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.auction-btn {
+  padding: 12px 25px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.list-btn {
+  background: #4361ee;
+  color: white;
+}
+
+.list-btn:hover {
+  background: #3a56d4;
+  transform: translateY(-2px);
+}
+
+.cancel-btn {
+  background: #dc3545;
+  color: white;
+}
+
+.cancel-btn:hover {
+  background: #c82333;
+  transform: translateY(-2px);
+}
+
+/* Edit & Auction Modes */
+.edit-mode, .auction-mode {
+  background: white;
+  border-radius: 12px;
+  padding: 25px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.edit-form h3, .auction-form h3 {
+  margin-top: 0;
+  color: #333;
+  font-size: 1.4rem;
+  margin-bottom: 25px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #555;
+}
+
+.form-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.2s;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #4361ee;
+  box-shadow: 0 0 0 2px rgba(67, 97, 238, 0.2);
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+  margin-top: 30px;
+}
+
+.save-btn {
+  padding: 12px 25px;
+  background: #4361ee;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.save-btn:hover {
+  background: #3a56d4;
+  transform: translateY(-2px);
+}
+
+.error-message {
+  color: #dc3545;
+  margin-top: 20px;
+  text-align: center;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+  .selling-car-container {
+    flex-direction: column;
+  }
+  
+  .car-preview {
+    flex: 0 0 auto;
+    margin-bottom: 20px;
+  }
+  
+  .specs-grid, .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 576px) {
+  .selling-car-container {
+    padding: 15px;
+  }
+  
+  .specifications-card, .edit-form, .auction-form {
+    padding: 20px;
+  }
+  
+  .form-actions {
+    flex-direction: column;
+  }
+  
+  .save-btn, .cancel-btn {
+    width: 100%;
+  }
+}
 </style>

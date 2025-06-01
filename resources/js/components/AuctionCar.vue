@@ -1,510 +1,727 @@
 <script setup>
-import { ref, onMounted, watch, computed } from 'vue';
-import axios from 'axios';
-import { useRoute } from 'vue-router';
+import { ref, onMounted, watch, computed } from 'vue'
+import axios from 'axios'
+import { useRoute } from 'vue-router'
 
-const route = useRoute();
-const carId = ref(route.params.carid);
-const cardata = ref(null);
-const currentImageIndex = ref(0);
-const chooseInfo = ref('auction');
-const yourBid = ref(0);
-const userBid = ref(0);
-
-const fetchUserBid = async () => {
-  try {
-    const response = await axios.get('/getUserBid', {
-      params: { auction_id: carId.value }
-    });
-    userBid.value = response.data.highest_bid ?? 0;
-  } catch (error) {
-    console.error('Failed to fetch user bid:', error);
-    userBid.value = 0;
+const route = useRoute()
+const props = defineProps({
+  carId: {
+    type: [String, Number],
+    required: true
   }
-};
+})
 
-const fetchCar = async () => {
-  if (!carId.value) return;
-  try {
-    const response = await axios.get(`/getAuctionCar/${carId.value}`);
-    console.log('Car data:', response.data);
-
-    const { car, averageRating } = response.data;
-
-    // Inject averageRating manually into the car object for easy access
-    car.averageRating = averageRating;
-
-    cardata.value = car;
-    currentImageIndex.value = 0;
-  } catch (error) {
-    console.error('Failed to fetch auction car:', error);
-    cardata.value = null;
-  }
-};
-
+// Data
+const carData = ref(null)
+const currentImageIndex = ref(0)
+const activeTab = ref('auction')
+const yourBid = ref(0)
+const userBid = ref(0)
 const bidStats = ref({
   total_bids: 0,
   highest_bid: 0,
-  unique_bidders: 0,
-});
+  unique_bidders: 0
+})
+const comments = ref([])
+const hasCommented = ref(false)
+const commentForm = ref({
+  rating: 5,
+  comment: ''
+})
+
+// Computed
+const bidIncrements = computed(() => {
+  const base = carData.value?.auctions?.bid_increment || 10
+  return [base, base * 2, base * 3]
+})
+
+// Methods
+const fetchCar = async () => {
+  try {
+    const response = await axios.get(`/getAuctionCar/${props.carId}`)
+    carData.value = {
+      ...response.data.car,
+      averageRating: response.data.averageRating
+    }
+  } catch (error) {
+    console.error('Failed to fetch car:', error)
+  }
+}
 
 const fetchBidStats = async () => {
   try {
     const response = await axios.get('/getBidData', {
-      params: { auction_id: carId.value }
-    });
-    bidStats.value = response.data;
-    yourBid.value = response.data.highest_bid; // set initial bid here
+      params: { auction_id: props.carId }
+    })
+    bidStats.value = response.data
+    yourBid.value = response.data.highest_bid
   } catch (error) {
-    console.error('Failed to fetch bid stats:', error);
-  }
-};
-const bidIncrements = computed(() => {
-  const base = cardata.value?.auctions?.bid_increment || 10;
-  return [base, base * 2, base * 3];
-});
-
-onMounted(() => {
-  fetchCar();
-  fetchBidStats();
-  fetchUserBid();
-  fetchComments(); // <-- Add this
-});
-
-watch(() => route.params.carid, (newCarId) => {
-  carId.value = newCarId;
-  fetchCar();
-  fetchBidStats();
-  fetchUserBid(); // new
-});
-
-function setInfo(type) {
-  chooseInfo.value = type;
-}
-
-function nextImage() {
-  const images = cardata.value?.images || [];
-  if (images.length > 0) {
-    currentImageIndex.value = (currentImageIndex.value + 1) % images.length;
+    console.error('Failed to fetch bid stats:', error)
   }
 }
 
-function prevImage() {
-  const images = cardata.value?.images || [];
-  if (images.length > 0) {
-    currentImageIndex.value = (currentImageIndex.value - 1 + images.length) % images.length;
-  }
-}
-const submitBid = async () => {
+const fetchUserBid = async () => {
   try {
-    const response = await axios.post('/createBid', {
-      auction_id: carId.value,
-      bid_amount: yourBid.value
-    });
-    alert('Bid submitted successfully!');
-    console.log(response.data);
-
-    await fetchBidStats();
-    await fetchUserBid();
+    const response = await axios.get('/getUserBid', {
+      params: { auction_id: props.carId }
+    })
+    userBid.value = response.data.highest_bid ?? 0
   } catch (error) {
-    console.error('Failed to submit bid:', error);
-    alert(error.response?.data?.message || 'Failed to submit bid.');
+    console.error('Failed to fetch user bid:', error)
   }
-};
-const newComment = ref({ rating: 5, comment: '' });
-
-const commentForm = ref({
-  rating: 5,
-  comment: ''
-});
-const comments = ref([]);
-const hasCommented = ref(false);
+}
 
 const fetchComments = async () => {
   try {
-    const res = await axios.get(`/comments/${carId.value}`);
-    comments.value = res.data.comments;
-    hasCommented.value = res.data.hasCommented;
-  } catch (err) {
-    console.error('Failed to fetch comments:', err);
+    const response = await axios.get(`/comments/${props.carId}`)
+    comments.value = response.data.comments
+    hasCommented.value = response.data.hasCommented
+  } catch (error) {
+    console.error('Failed to fetch comments:', error)
   }
-};
+}
+
+const submitBid = async () => {
+  try {
+    await axios.post('/createBid', {
+      auction_id: props.carId,
+      bid_amount: yourBid.value
+    })
+    await Promise.all([fetchBidStats(), fetchUserBid()])
+  } catch (error) {
+    console.error('Bid submission failed:', error)
+  }
+}
 
 const submitComment = async () => {
   try {
-    const res = await axios.post('/auction/comment', {
-      auction_id: carId.value,
+    const response = await axios.post('/auction/comment', {
+      auction_id: carData.value.auctions.id,
       rating: commentForm.value.rating,
-      comment: commentForm.value.comment
+      comment: commentForm.value.comment.trim() // Add trim() to remove whitespace
+    }, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      }
     });
-    alert('Comment submitted!');
-    commentForm.value.comment = '';
-    fetchComments();
-    hasCommented.value = true;
-  } catch (err) {
-    alert(err.response?.data?.message || 'Failed to submit comment');
+    
+    if (response.data.success) {
+      alert('Comment submitted successfully!');
+      commentForm.value.comment = '';
+      await fetchComments();
+      hasCommented.value = true;
+    } else {
+      throw new Error(response.data.message || 'Failed to submit comment');
+    }
+  } catch (error) {
+    console.error('Comment submission failed:', error);
+    alert(error.response?.data?.message || 
+         error.message || 
+         'Failed to submit comment. Please try again.');
   }
 };
 
-function increaseBid(amount) {
-  yourBid.value += amount;
-}
-function renderStars(rating) {
-  if (!rating) rating = 0;
-  const fullStars = Math.floor(rating);
-  const halfStar = rating % 1 >= 0.5;
-  const emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
-
-  let starsHtml = '';
-  for (let i = 0; i < fullStars; i++) starsHtml += '★';
-  if (halfStar) starsHtml += '½'; // you can replace with half star icon if available
-  for (let i = 0; i < emptyStars; i++) starsHtml += '☆';
-
-  return starsHtml;
+const nextImage = () => {
+  if (carData.value?.images?.length) {
+    currentImageIndex.value = (currentImageIndex.value + 1) % carData.value.images.length
+  }
 }
 
+const prevImage = () => {
+  if (carData.value?.images?.length) {
+    currentImageIndex.value = (currentImageIndex.value - 1 + carData.value.images.length) % carData.value.images.length
+  }
+}
+
+const increaseBid = (amount) => {
+  yourBid.value += amount
+}
+
+const renderStars = (rating) => {
+  const fullStars = '★'.repeat(Math.floor(rating))
+  const halfStar = rating % 1 >= 0.5 ? '½' : ''
+  const emptyStars = '☆'.repeat(5 - Math.ceil(rating))
+  return `${fullStars}${halfStar}${emptyStars}`
+}
+
+// Lifecycle
+onMounted(async () => {
+  await Promise.all([
+    fetchCar(),
+    fetchBidStats(),
+    fetchUserBid(),
+    fetchComments()
+  ])
+})
+
+watch(() => props.carId, () => {
+  Promise.all([
+    fetchCar(),
+    fetchBidStats(),
+    fetchUserBid(),
+    fetchComments()
+  ])
+})
 </script>
 
-
 <template>
-  <div class="auction-main" v-if="cardata && cardata.images?.length">
-    <div class="auction-left">
-      <div class="auction-image-container">
-        <img :src="cardata.images[currentImageIndex]?.url" alt="Car Image" class="car-img" />
-        <button v-if="cardata.images.length > 1" class="arrow left" @click="prevImage">‹</button>
-        <button v-if="cardata.images.length > 1" class="arrow right" @click="nextImage">›</button>
+  <div v-if="carData" class="auction-car">
+    <!-- Car Images Section -->
+    <div class="car-images">
+      <div class="image-container">
+        <img 
+          :src="carData.images[currentImageIndex]?.url" 
+          :alt="`${carData.brand?.manufacturer} ${carData.model?.model}`"
+          class="main-image"
+        />
+        <button 
+          v-if="carData.images.length > 1" 
+          class="nav-arrow prev"
+          @click="prevImage"
+        >
+          ‹
+        </button>
+        <button 
+          v-if="carData.images.length > 1" 
+          class="nav-arrow next"
+          @click="nextImage"
+        >
+          ›
+        </button>
       </div>
-      <h2 v-if="cardata.auctions.is_active" style="color: green;">End date: {{ cardata.auctions.end_time }}</h2>
-      <h2 v-if="!cardata.auctions.is_active" style="color: red;">Start date: {{ cardata.auctions.start_time }}</h2>
+      
+      <div class="auction-status">
+        <h3 v-if="carData.auctions?.is_active" class="active">
+          <i class="pi pi-clock"></i> Ends: {{ carData.auctions.end_time }}
+        </h3>
+        <h3 v-else class="inactive">
+          <i class="pi pi-calendar"></i> Starts: {{ carData.auctions?.start_time }}
+        </h3>
+      </div>
 
-      <div class="seller-data" v-if="cardata && cardata.user">
-        <span><strong>Name:</strong> {{ cardata.user.name }}</span>
-        <span>
-          <strong>Review:</strong>
-          <span v-html="renderStars(cardata.averageRating)"></span>
-          ({{ cardata.averageRating || '0' }})
-        </span>
+      <div v-if="carData.user" class="seller-info">
+        <h4>Seller Information</h4>
+        <p><strong>Name:</strong> {{ carData.user.name }}</p>
+        <p>
+          <strong>Rating:</strong> 
+          <span v-html="renderStars(carData.averageRating)"></span>
+          ({{ carData.averageRating?.toFixed(1) || '0' }})
+        </p>
       </div>
     </div>
 
-    <div class="auction-right">
-      <div class="auction-options">
-        <button @click="setInfo('auction')"><i class="pi pi-dollar"></i></button>
-        <button @click="setInfo('carinfo')"><i class="pi pi-info"></i></button>
-        <button @click="setInfo('car-comment')"><i class="pi pi-id-card"></i></button>
+    <!-- Auction Info Section -->
+    <div class="auction-info">
+      <div class="tabs">
+        <button 
+          :class="{ active: activeTab === 'auction' }"
+          @click="activeTab = 'auction'"
+        >
+          <i class="pi pi-dollar"></i> Auction
+        </button>
+        <button 
+          :class="{ active: activeTab === 'details' }"
+          @click="activeTab = 'details'"
+        >
+          <i class="pi pi-info-circle"></i> Details
+        </button>
+        <button 
+          :class="{ active: activeTab === 'comments' }"
+          @click="activeTab = 'comments'"
+        >
+          <i class="pi pi-comments"></i> Comments
+        </button>
       </div>
 
-      <div class="auction-right-info">
-        <div v-if="chooseInfo === 'car-comment'" class="comment-wrapper">
-          <h3>Leave a Comment</h3>
-          <div v-if="!hasCommented" class="comment-form">
-            <label>Rating:</label>
-            <select v-model="commentForm.rating">
-              <option v-for="n in 5" :key="n" :value="n">{{ n }} ★</option>
-            </select>
-
-            <label>Comment:</label>
-            <textarea v-model="commentForm.comment" rows="4" maxlength="1000" placeholder="Write your thoughts here..."></textarea>
-
-            <button @click="submitComment">Submit</button>
-          </div>
-          <div v-else class="already-commented">You already left a comment for this auction.</div>
-
-          <h3>Comments</h3>
-          <div class="comments-list">
-            <div class="comment" v-for="(c, i) in comments" :key="i">
-              <div class="rating">Rating: {{ c.rating }} ★</div>
-              <div class="text">{{ c.comment }}</div>
+      <div class="tab-content">
+        <!-- Auction Tab -->
+        <div v-if="activeTab === 'auction'" class="auction-tab">
+          <div class="bid-stats">
+            <div class="stat-item">
+              <span class="label">Highest Bid:</span>
+              <span class="value">€{{ bidStats.highest_bid?.toLocaleString() }}</span>
+            </div>
+            <div class="stat-item">
+              <span class="label">Total Bids:</span>
+              <span class="value">{{ bidStats.total_bids }}</span>
+            </div>
+            <div class="stat-item">
+              <span class="label">Unique Bidders:</span>
+              <span class="value">{{ bidStats.unique_bidders }}</span>
+            </div>
+            <div class="stat-item">
+              <span class="label">Your Bid:</span>
+              <span class="value">€{{ userBid?.toLocaleString() }}</span>
             </div>
           </div>
-        </div>
-        <div v-if="chooseInfo === 'auction'" class="auction-bid-data">
-          <h3>Bid Info</h3>
-          <div class="bid-info">
-            <p>Highest Bid: <strong>€{{ bidStats.highest_bid }}</strong></p>
-            <p>Total Bids: <strong>{{ bidStats.total_bids }}</strong></p>
-            <p>Unique Bidders: <strong>{{ bidStats.unique_bidders }}</strong></p>
-            <p>Your Bid: <strong>€{{ userBid }}</strong></p>
-          </div>
 
-          <h3>Place a Bid</h3>
-          <div class="make-bid-info">
-            <div class="your-bid">
-              <label>Your Bid:</label>
-              <input type="number" :value="yourBid" readonly />
+          <div class="bid-form">
+            <h3>Place Your Bid</h3>
+            <div class="bid-amount">
+              <label>Your Bid Amount:</label>
+              <input 
+                type="number" 
+                v-model.number="yourBid" 
+                :min="bidStats.highest_bid + bidIncrements[0]"
+              />
             </div>
-            <div class="bid-value">
-              <button v-for="inc in bidIncrements" :key="inc" @click="increaseBid(inc)">
-                +{{ inc }}
+            
+            <div class="quick-buttons">
+              <button 
+                v-for="inc in bidIncrements" 
+                :key="inc"
+                @click="increaseBid(inc)"
+              >
+                +€{{ inc }}
               </button>
             </div>
-            <button class="submit-bid-btn" @click="submitBid">Submit Bid</button>
+            
+            <button class="submit-bid" @click="submitBid">
+              Submit Bid
+            </button>
           </div>
         </div>
-        <div v-if="chooseInfo === 'carinfo'" class="car-info-data">
-          <h3>Car Details</h3>
-          <ul>
-            <li><strong>Brand:</strong> {{ cardata.brand?.manufacturer }}</li>
-            <li><strong>Model:</strong> {{ cardata.model?.model }}</li>
-            <li><strong>Year:</strong> {{ cardata.year }}</li>
-            <li><strong>Mileage:</strong> {{ cardata.mileage.toLocaleString() }} km</li>
-            <li><strong>Fuel Type:</strong> {{ cardata.fuel_type }}</li>
-            <li><strong>Transmission:</strong> {{ cardata.transmission }}</li>
-            <li><strong>Engine Size:</strong> {{ cardata.engine_size }} L</li>
-            <li><strong>Body Type:</strong> {{ cardata.body_type }}</li>
-            <li><strong>Color:</strong> {{ cardata.color }}</li>
-          </ul>
-          <div class="comment-section">
-            <h4>Comments</h4>
-            <p>This car has been maintained regularly and runs smoothly. Ideal for city driving and long trips alike. More details to be added later.</p>
+
+        <!-- Details Tab -->
+        <div v-if="activeTab === 'details'" class="details-tab">
+          <h3>Car Specifications</h3>
+          <div class="specs-grid">
+            <div class="spec-item">
+              <span class="spec-label">Brand:</span>
+              <span class="spec-value">{{ carData.brand?.manufacturer }}</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-label">Model:</span>
+              <span class="spec-value">{{ carData.model?.model }}</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-label">Year:</span>
+              <span class="spec-value">{{ carData.year }}</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-label">Mileage:</span>
+              <span class="spec-value">{{ carData.mileage?.toLocaleString() }} km</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-label">Fuel Type:</span>
+              <span class="spec-value">{{ carData.fuel_type }}</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-label">Transmission:</span>
+              <span class="spec-value">{{ carData.transmission }}</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-label">Engine Size:</span>
+              <span class="spec-value">{{ carData.engine_size }}L</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-label">Body Type:</span>
+              <span class="spec-value">{{ carData.body_type }}</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-label">Color:</span>
+              <span class="spec-value">{{ carData.color }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Comments Tab -->
+        <div v-if="activeTab === 'comments'" class="comments-tab">
+          <div v-if="!hasCommented" class="comment-form">
+            <h3>Leave a Review</h3>
+            <div class="form-group">
+              <label>Rating:</label>
+              <select v-model="commentForm.rating">
+                <option v-for="n in 5" :value="n">{{ n }} ★</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Comment:</label>
+              <textarea 
+                v-model="commentForm.comment" 
+                placeholder="Share your experience..."
+                rows="4"
+              ></textarea>
+            </div>
+            <button class="submit-comment" @click="submitComment">
+              Submit Review
+            </button>
+          </div>
+          <div v-else class="already-commented">
+            You've already submitted a review for this auction.
+          </div>
+
+          <div class="comments-list">
+            <h3>Reviews</h3>
+            <div v-if="comments.length === 0" class="no-comments">
+              No reviews yet
+            </div>
+            <div v-else>
+              <div v-for="comment in comments" :key="comment.id" class="comment">
+                <div class="rating">
+                  {{ '★'.repeat(comment.rating) }}{{ '☆'.repeat(5 - comment.rating) }}
+                </div>
+                <div class="comment-text">{{ comment.comment }}</div>
+                <div class="comment-date">{{ comment.created_at }}</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </div>
   </div>
-
+  <div v-else class="loading">
+    Loading car details...
+  </div>
 </template>
 
-
-<style>
-.comment-wrapper {
+<style scoped>
+.auction-car {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
   background: #fff;
-  padding: 20px;
-  border: 1px solid #ddd;
-  border-radius: 10px;
-  margin-top: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding: 30px;
 }
 
-.comment-form {
+.car-images {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 20px;
 }
 
-.comment-form select,
-.comment-form textarea {
-  padding: 8px;
-  border-radius: 5px;
-  border: 1px solid #aaa;
-  font-size: 1rem;
-}
-
-.comment-form button {
-  align-self: start;
-  padding: 10px 15px;
-  border: none;
-  background: #28a745;
-  color: #fff;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.comment-form button:hover {
-  background: #218838;
-}
-
-.already-commented {
-  color: #888;
-  font-style: italic;
-  margin-bottom: 15px;
-}
-
-.comments-list {
-  margin-top: 20px;
-}
-
-.comment {
-  border-top: 1px solid #ccc;
-  padding: 10px 0;
-}
-
-.comment:first-child {
-  border-top: none;
-}
-
-.comment .rating {
-  font-weight: bold;
-  margin-bottom: 5px;
-}
-.comment-section {
-  margin-top: 20px;
-  background-color: #fff;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  padding: 15px;
-  font-size: 0.95rem;
-  color: #333;
-}
-.car-info-data {
-  background-color: #f9f9f9;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 20px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-
-.car-info-data h3 {
-  margin-bottom: 15px;
-}
-
-.car-info-data ul {
-  list-style-type: none;
-  padding: 0;
-  margin: 0;
-}
-
-.car-info-data li {
-  margin-bottom: 8px;
-  font-size: 1rem;
-}
-.auction-main .submit-bid-btn {
-  margin-top: 15px;
-  padding: 10px 20px;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 1rem;
-  transition: background-color 0.2s;
-}
-
-.auction-main .submit-bid-btn:hover {
-  background-color: #0056b3;
-}
-  .auction-main {
-  display: flex;
-  gap: 40px;
-  padding: 20px;
-}
-
-.auction-main .auction-left {
-  flex: 1;
-}
-
-.auction-main .auction-right {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.auction-image-container {
+.image-container {
   position: relative;
-  width: 100%;
-  max-width: 500px;
-  height: 300px;
   border-radius: 10px;
   overflow: hidden;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  aspect-ratio: 16/9;
 }
 
-.car-img {
+.main-image {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.auction-main .arrow {
+.nav-arrow {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  font-size: 2rem;
+  background: rgba(0, 0, 0, 0.5);
   color: white;
-  background-color: rgba(0,0,0,0.5);
   border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  padding: 5px 10px;
-  border-radius: 5px;
+  font-size: 1.5rem;
+  transition: all 0.2s;
 }
 
-.arrow.left { left: 10px; }
-.arrow.right { right: 10px; }
+.nav-arrow:hover {
+  background: rgba(0, 0, 0, 0.7);
+}
 
-.seller-data {
-  margin-top: 15px;
-  font-size: 1.1rem;
+.prev {
+  left: 15px;
+}
+
+.next {
+  right: 15px;
+}
+
+.auction-status h3 {
+  margin: 0;
+  padding: 10px 15px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.auction-status .active {
+  background: rgba(40, 167, 69, 0.1);
+  color: #28a745;
+}
+
+.auction-status .inactive {
+  background: rgba(220, 53, 69, 0.1);
+  color: #dc3545;
+}
+
+.seller-info {
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 8px;
+}
+
+.seller-info h4 {
+  margin-top: 0;
+  margin-bottom: 10px;
+}
+
+.auction-info {
   display: flex;
   flex-direction: column;
-  gap: 5px;
 }
 
-.auction-options {
+.tabs {
   display: flex;
-  gap: 10px;
+  border-bottom: 1px solid #dee2e6;
   margin-bottom: 20px;
 }
 
-.auction-options button {
-  padding: 10px;
-  border: 1px solid #888;
-  border-radius: 5px;
-  background-color: white;
+.tabs button {
+  padding: 10px 15px;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
   cursor: pointer;
+  font-weight: 500;
+  color: #6c757d;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.auction-options button:hover {
-  background-color: #f0f0f0;
+.tabs button:hover {
+  color: #495057;
 }
 
-.auction-right-info {
-  width: 100%;
-  max-width: 400px;
+.tabs button.active {
+  color: #4361ee;
+  border-bottom-color: #4361ee;
 }
 
-.auction-bid-data {
-  background-color: #f9f9f9;
-  border: 1px solid #ddd;
+.bid-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+.stat-item {
+  background: #f8f9fa;
+  padding: 12px;
   border-radius: 8px;
-  padding: 20px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
-.bid-info p {
-  margin: 8px 0;
+.stat-item .label {
+  display: block;
+  font-size: 0.9rem;
+  color: #6c757d;
+  margin-bottom: 5px;
+}
+
+.stat-item .value {
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.bid-form {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+.bid-form h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+}
+
+.bid-amount {
+  margin-bottom: 15px;
+}
+
+.bid-amount label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.bid-amount input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
   font-size: 1rem;
 }
 
-.make-bid-info {
-  margin-top: 20px;
+.quick-buttons {
   display: flex;
-  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.quick-buttons button {
+  flex: 1;
+  padding: 8px;
+  background: #e9ecef;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.quick-buttons button:hover {
+  background: #dee2e6;
+}
+
+.submit-bid {
+  width: 100%;
+  padding: 12px;
+  background: #4361ee;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.submit-bid:hover {
+  background: #3a56d4;
+}
+
+.specs-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: 15px;
 }
 
-.your-bid {
+.spec-item {
   display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 10px;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid #eee;
 }
 
-.your-bid input {
-  width: 100px;
-  padding: 8px;
-  text-align: center;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  background-color: #fff;
+.spec-label {
+  font-weight: 500;
+  color: #6c757d;
 }
 
-.bid-value {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
+.spec-value {
+  font-weight: 600;
 }
 
-.bid-value button {
-  padding: 10px 15px;
-  border: 1px solid #444;
-  background-color: #eee;
-  border-radius: 5px;
+.comment-form {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.comment-form h3 {
+  margin-top: 0;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.form-group textarea {
+  min-height: 100px;
+}
+
+.submit-comment {
+  padding: 10px 20px;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 6px;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.2s;
 }
 
-.bid-value button:hover {
-  background-color: #ccc;
+.submit-comment:hover {
+  background: #218838;
 }
 
+.already-commented {
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  color: #6c757d;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.comments-list h3 {
+  margin-top: 0;
+}
+
+.comment {
+  padding: 15px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.comment:last-child {
+  border-bottom: none;
+}
+
+.rating {
+  color: #ffc107;
+  font-size: 1.2rem;
+  margin-bottom: 5px;
+}
+
+.comment-text {
+  margin-bottom: 5px;
+}
+
+.comment-date {
+  font-size: 0.8rem;
+  color: #6c757d;
+}
+
+.loading {
+  padding: 40px;
+  text-align: center;
+  color: #6c757d;
+}
+
+@media (max-width: 992px) {
+  .auction-car {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 576px) {
+  .bid-stats,
+  .specs-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .tabs {
+    flex-wrap: wrap;
+  }
+  
+  .tabs button {
+    flex: 1;
+    min-width: 100px;
+  }
+}
 </style>

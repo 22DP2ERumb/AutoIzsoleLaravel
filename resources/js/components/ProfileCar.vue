@@ -1,239 +1,321 @@
 <script setup>
-    import { ref } from 'vue';
-    import axios from 'axios'
+import { ref } from 'vue';
+import axios from 'axios'
+import { useRouter } from 'vue-router'
 
-
-    const props = defineProps({
+const props = defineProps({
     car: Object
-    });
+});
 
-    const currentImageIndex = ref(0);
+const router = useRouter()
+const currentImageIndex = ref(0)
+const showDropdown = ref(false)
 
-    function nextImage() {
-        if (props.car.images.length > 0) {
-            currentImageIndex.value = (currentImageIndex.value + 1) % props.car.images.length;
-        }
+function nextImage(e) {
+    e.stopPropagation()
+    if (props.car.images.length > 0) {
+        currentImageIndex.value = (currentImageIndex.value + 1) % props.car.images.length
     }
+}
 
-    function prevImage() {
-        if (props.car.images.length > 0) {
-            currentImageIndex.value = (currentImageIndex.value - 1 + props.car.images.length) % props.car.images.length;
-        }
+function prevImage(e) {
+    e.stopPropagation()
+    if (props.car.images.length > 0) {
+        currentImageIndex.value = (currentImageIndex.value - 1 + props.car.images.length) % props.car.images.length
     }
+}
 
-    async function deleteCar(carId) {
-        try {
-            const response = await axios.delete(`/deleteCar/${carId}`);
-            window.location.reload();
-        } catch (error) {
-            console.error('Error deleting car:', error);
-            alert('Failed to delete the car.');
-        }
-    }
+async function deleteCar(carId) {
+    if (!confirm('Are you sure you want to delete this car?')) return
     
+    try {
+        await axios.delete(`/deleteCar/${carId}`)
+        window.location.reload()
+    } catch (error) {
+        console.error('Error deleting car:', error)
+        alert('Failed to delete the car.')
+    }
+}
+function navigateToCar() {
+  router.push(`/profile/${props.car.id}`)
+}
 </script>
 
 <template>
-    <div class="ProfileCarcard">
-        <RouterLink :to="`/profile/${car.id}`">
-            <div class="image-container">
-                <img class="car-img" :src="car.images[currentImageIndex]?.image_path"></img>
-                <div class="cog-dropdown-wrapper">
-
-                    <i @click.prevent.stop="deleteCar(car.id)" class="pi pi-times cog-icon delete-icon"></i>
-
-                    
-
-                </div>
-
-                <button v-if="car.images.length > 1" class="arrow left" @click.prevent.stop="prevImage">‹</button>
-                <button v-if="car.images.length > 1" class="arrow right" @click.prevent.stop="nextImage">›</button>               
+    <div class="profile-car-card">
+        <div class="car-image-container" @click="navigateToCar">
+            <img 
+                class="car-image" 
+                :src="car.images[currentImageIndex]?.image_path || '/placeholder-car.jpg'"
+                :alt="`${car.brand.manufacturer} ${car.model.model}`"
+            >
+            
+            <div class="car-actions">
+                <button class="action-btn delete-btn" @click.stop="deleteCar(car.id)">
+                    <i class="pi pi-trash"></i>
+                </button>
             </div>
 
-            <div class="card-description">
-                <h3 class="car-title">{{car.brand.manufacturer}} {{car.model.model}}</h3>
-
-                <ul 
-                    v-if="car.auctions && car.auctions.is_active" 
-                    class="auction-badge" style="background-color: green;"
-                    >
-                    <li>AUCTION</li>
-                    <li>End date: <span>{{ car.auctions.end_time }}</span></li>
-                </ul>
-
-                <ul 
-                    v-if="car.auctions && !car.auctions.is_active" 
-                    class="auction-badge" style="background-color: #423d3e;"
-                    >
-                    <li>AUCTION</li>
-                    <li>Start date: <span>{{ car.auctions.start_time }}</span></li>
-                </ul>
-
-        
-                
-                <ul class="car-details">
-                    <li>Year: {{ car.year }}</li>
-                    <li>Mileage: {{ car.mileage }}km</li>
-                    
-                    <br>
-                </ul>
+            <div v-if="car.images.length > 1" class="image-nav">
+                <button class="nav-btn prev" @click.stop="prevImage">
+                    <i class="pi pi-chevron-left"></i>
+                </button>
+                <button class="nav-btn next" @click.stop="nextImage">
+                    <i class="pi pi-chevron-right"></i>
+                </button>
             </div>
             
+            <div v-if="car.images.length > 1" class="image-counter">
+                {{ currentImageIndex + 1 }}/{{ car.images.length }}
+            </div>
+        </div>
 
-            <img class="car-logo" :src="car.brand.image_path">
-        </RouterLink>
+        <div class="car-details">
+            <div class="car-header">
+                <h3 class="car-title">{{ car.brand.manufacturer }} {{ car.model.model }}</h3>
+                <span class="car-year">{{ car.year }}</span>
+            </div>
+            
+            <div class="car-status" :class="{ 'active': car.auctions?.is_active }">
+                <span v-if="car.auctions?.is_active" class="status-badge active">
+                    <i class="pi pi-clock"></i> Ends: {{ car.auctions.end_time }}
+                </span>
+                <span v-else-if="car.auctions" class="status-badge inactive">
+                    <i class="pi pi-calendar"></i> Starts: {{ car.auctions.start_time }}
+                </span>
+                <span v-else class="status-badge">
+                    <i class="pi pi-car"></i> Not Listed
+                </span>
+            </div>
+            
+            <div class="car-specs">
+                <div class="spec-item">
+                    <i class="pi pi-tachometer-alt"></i>
+                    <span>{{ car.mileage.toLocaleString() }} km</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="brand-logo">
+            <img :src="car.brand.image_path" :alt="`${car.brand.manufacturer} logo`">
+        </div>
     </div>
 </template>
-<style>
-    .delete-icon {
-    color: white;
-    transition: color 0.3s ease;
-}
-.auction-badge {
-  display: inline-block; /* bright red */
-  color: white;
-  font-weight: bold;
-  font-size: 0.85rem;
-  padding: 0.2rem 0.5rem;
-  border-radius: 4px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+
+<style scoped>
+.profile-car-card {
+    position: relative;
+    background: #fff;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+    cursor: pointer;
+    width: 280px;
+    height: 380px;
+    display: flex;
+    flex-direction: column;
 }
 
-.delete-icon:hover {
-    color: red;
+.profile-car-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
 }
 
-.cog-dropdown-wrapper {
-    position: absolute;
-    top: 5px;
-    left: 5px;
+.car-image-container {
+    position: relative;
+    width: 100%;
+    height: 180px;
+    overflow: hidden;
 }
 
-.profile-car-dropdown-menu {
-    display: none;
-    position: absolute;
-    top: 30px;
-    left: 0;
-    background-color: black;
-    padding: 5px 10px;
-    border-radius: 4px;
-    list-style: none;
-    z-index: 10;
+.car-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
 }
 
-.profile-car-dropdown-menu li:hover {
-    transform: scale(1.2);
-    transition: transform 0.3s ease, color 0.3s ease;
+.profile-car-card:hover .car-image {
+    transform: scale(1.03);
 }
 
-.profile-car-dropdown-menu li {
-    margin: 5px 0;
-}
-
-.profile-car-dropdown-menu a,
-.profile-car-dropdown-menu router-link {
-    color: white;
-    text-decoration: none;
-}
-
-.cog-dropdown-wrapper:hover .profile-car-dropdown-menu {
-    display: block;
-}
-
-.cog-icon {
+.car-actions {
     position: absolute;
     top: 10px;
-    left: 10px;
-    color: white;
-    transition: transform 0.3s ease, color 0.3s ease;
+    right: 10px;
+    display: flex;
+    gap: 8px;
+    z-index: 2;
 }
 
-.cog-icon:hover {
-    transform: scale(1.2);
-}
-
-.arrow {
-    position: absolute;
-    top: 25%;
+.action-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.5);
     color: white;
-    font-size: 3rem;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
-    opacity: 0;
-    margin: 5px;
-    border-radius: 4px;
+    transition: all 0.2s ease;
 }
 
-.ProfileCarcard:hover .arrow {
+.action-btn:hover {
+    background: rgba(0, 0, 0, 0.7);
+    transform: scale(1.1);
+}
+
+.delete-btn:hover {
+    background: rgba(220, 53, 69, 0.8);
+}
+
+.image-nav {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 10px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.profile-car-card:hover .image-nav {
     opacity: 1;
 }
 
-.arrow.left {
-    left: 10px;
-}
-
-.arrow.right {
-    right: 10px;
-}
-
-.ProfileCarcard {
-    position: relative;
+.nav-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    border: none;
     display: flex;
-    margin: 20px;
-    width: 250px;
-    height: 350px;
-    border-radius: 2px;
-    box-shadow: 0 0 0 2px black;
-    transition: transform 0.3s ease, color 0.3s ease;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
 }
 
-.ProfileCarcard:hover {
-    transform: scale(1.2);
+.nav-btn:hover {
+    background: rgba(0, 0, 0, 0.7);
+    transform: scale(1.1);
 }
 
-.image-container {
-    position: relative;
-    height: 50%;
-    width: 100%;
-}
-
-.ProfileCarcard .car-img {
-    width: 100%;
-    height: 100%;
-    object-fit: fill;
-    border-bottom: 2px solid black;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-}
-
-.ProfileCarcard .car-logo {
+.image-counter {
     position: absolute;
     bottom: 10px;
     right: 10px;
-    width: 45px;
-    height: auto;
+    background: rgba(0, 0, 0, 0.6);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 12px;
 }
 
-.ProfileCarcard .card-description {
-    padding: 10px;
-    text-align: center;
+.car-details {
+    padding: 16px;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
 }
 
-.ProfileCarcard .car-title {
-    font-size: 1.2rem;
-    font-weight: bold;
-    margin-bottom: 8px;
+.car-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
 }
 
-.ProfileCarcard .car-details {
-    padding: 0;
+.car-title {
+    font-size: 16px;
+    font-weight: 600;
     margin: 0;
-    list-style: none;
-    font-size: 0.9rem;
+    color: #333;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 70%;
 }
 
-.ProfileCarcard .car-details li {
-    margin: 4px 0;
-    font-weight: bold;
+.car-year {
+    font-size: 14px;
+    color: #666;
+    background: #f5f5f5;
+    padding: 2px 8px;
+    border-radius: 4px;
 }
 
+.car-status {
+    margin-bottom: 12px;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.status-badge.active {
+    background: rgba(40, 167, 69, 0.1);
+    color: #28a745;
+}
+
+.status-badge.inactive {
+    background: rgba(108, 117, 125, 0.1);
+    color: #6c757d;
+}
+
+.car-specs {
+    margin-top: auto;
+}
+
+.spec-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #555;
+}
+
+.brand-logo {
+    position: absolute;
+    bottom: 16px;
+    right: 16px;
+    width: 40px;
+    height: 40px;
+    background: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    padding: 5px;
+}
+
+.brand-logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+@media (max-width: 768px) {
+    .profile-car-card {
+        width: 100%;
+        max-width: 300px;
+    }
+    
+    .image-nav {
+        opacity: 1;
+    }
+}
 </style>

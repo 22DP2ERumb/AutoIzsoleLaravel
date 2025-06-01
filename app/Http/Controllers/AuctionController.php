@@ -14,32 +14,50 @@ use App\Models\Comment;
 class AuctionController extends Controller
 {
     public function storeComment(Request $request)
-    {
-        if (!auth()->check()) {
+{
+    if (!auth()->check()) {
         return response()->json(['message' => 'Not authenticated'], 401);
     }
-        $request->validate([
-            'auction_id' => 'required|exists:car_auction,id',
-            'rating' => 'required|integer|min:1|max:5',
-            'comment' => 'required|string|max:1000',
-        ]);
 
-        $userId = auth()->id();
+    // Log incoming request data
+    \Log::info('Incoming comment data', $request->all());
 
-        $existing = Comment::where('user_id', $userId)->where('auction_id', $request->auction_id)->first();
-        if ($existing) {
-            return response()->json(['message' => 'You already left a comment for this auction.'], 400);
-        }
+    // Temporarily dump auction_id to check its value
+    // dd($request->auction_id);
 
-        $comment = Comment::create([
-            'user_id' => $userId,
-            'auction_id' => $request->auction_id,
-            'rating' => $request->rating,
-            'comment' => $request->comment,
-        ]);
+    $request->validate([
+        'auction_id' => 'required|exists:car_auction,id',
+        'rating' => 'required|integer|min:1|max:5',
+        'comment' => 'required|string|max:1000',
+    ]);
 
-        return response()->json($comment);
+    $userId = auth()->id();
+
+    // Log user ID and auction ID before checking for existing comment
+    \Log::info('Checking for existing comment', [
+        'user_id' => $userId,
+        'auction_id' => $request->auction_id
+    ]);
+
+    $existing = Comment::where('user_id', $userId)
+        ->where('auction_id', $request->auction_id)
+        ->first();
+
+    if ($existing) {
+        return response()->json(['message' => 'You already left a comment for this auction.'], 400);
     }
+
+    $comment = Comment::create([
+        'user_id' => $userId,
+        'auction_id' => $request->auction_id,
+        'rating' => $request->rating,
+        'comment' => $request->comment,
+    ]);
+
+    \Log::info('Comment created successfully', $comment->toArray());
+
+    return response()->json($comment);
+}
     public function StartAuctionPost(Request $request)
     {
         // larvale.log for debugging

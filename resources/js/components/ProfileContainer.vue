@@ -1,107 +1,165 @@
 <script setup>
-    import ProfileSelection from './ProfileSelection.vue'
+import { ref, onMounted } from 'vue'
+import axios from 'axios'
+import ProfileSelection from './ProfileSelection.vue'
 
-    import { ref, onMounted } from 'vue';
-    import axios from 'axios'
-    import { RouterLink, useRoute } from 'vue-router'
-    import { useRouter } from 'vue-router'
-    
-    const router = useRouter()
-    const user = ref(null)
-    const showGarage = ref(false)
-    const sellingCar = ref(false)
-    const sellingCarId = ref(null)
-    const route = useRoute()
-    
+const user = ref(null)
+const isLoading = ref(false)
 
-    onMounted(async () => {
-        try {
-            const response = await axios.get('/auth-user')
-            user.value = response.data.user
-        } catch (error) {
-            user.value = null
-        }
-    })
-    
-    
+onMounted(async () => {
+    try {
+        isLoading.value = true
+        const response = await axios.get('/auth-user')
+        user.value = response.data.user
+    } catch (error) {
+        user.value = null
+    } finally {
+        isLoading.value = false
+    }
+})
 </script>
 
 <template>
-
-    <div class="profile-container">
-        <div class="profile-content">
-            <div class="user-info">
-                <a href="">
-                    <img class="userImg" src="/images/basicUser.png" alt="">
-                    <span v-if="user">{{ user.name }}</span>
-                </a>
+    <div class="profile-page">
+        <aside class="profile-sidebar">
+            <div class="user-profile">
+                <div class="avatar-container">
+                    <img 
+                        class="user-avatar" 
+                        src="/images/basicUser.png" 
+                        :alt="user?.name || 'User avatar'"
+                    >
+                </div>
+                
+                <h2 v-if="user" class="user-name">{{ user.name }}</h2>
+                <p v-if="user" class="user-email">{{ user.email }}</p>
             </div>
 
-            <ul class="options">
-                <li><RouterLink to="/profile">My Garage</RouterLink></li>
-                <li>Settings</li>
+            <nav class="profile-nav">
+                <RouterLink to="/profile" class="nav-link" active-class="active">
+                    <i class="pi pi-car"></i>
+                    <span>My Garage</span>
+                </RouterLink>
+                <RouterLink to="/profile/settings" class="nav-link" active-class="active">
+                    <i class="pi pi-cog"></i>
+                    <span>Settings</span>
+                </RouterLink>
+            </nav>
+        </aside>
 
-            </ul>
-        </div>
-        <ProfileSelection />
-        
+        <main class="profile-content">
+            <RouterView />
+        </main>
     </div>
 </template>
-  
-  
+
 <style scoped>
-    .profile-main-screen{
+.profile-page {
+    display: flex;
+    min-height: calc(100vh - 80px);
+    background: #f8f9fa;
+}
+
+.profile-sidebar {
+    width: 280px;
+    background: white;
+    padding: 30px 20px;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+}
+
+.user-profile {
+    text-align: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.avatar-container {
+    width: 120px;
+    height: 120px;
+    margin: 0 auto 15px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 3px solid #4361ee;
+    padding: 5px;
+}
+
+.user-avatar {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.user-name {
+    font-size: 1.25rem;
+    margin: 0 0 5px;
+    color: #333;
+}
+
+.user-email {
+    font-size: 0.9rem;
+    color: #666;
+    margin: 0;
+}
+
+.profile-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.nav-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 15px;
+    border-radius: 8px;
+    text-decoration: none;
+    color: #555;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.nav-link:hover {
+    background: #f0f2f5;
+    color: #4361ee;
+}
+
+.nav-link.active {
+    background: rgba(67, 97, 238, 0.1);
+    color: #4361ee;
+}
+
+.nav-link i {
+    font-size: 1.1rem;
+}
+
+.profile-content {
+    flex: 1;
+    padding: 30px;
+    background: white;
+    margin: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+@media (max-width: 768px) {
+    .profile-page {
+        flex-direction: column;
+    }
+    
+    .profile-sidebar {
         width: 100%;
+        padding: 20px;
     }
-    .user-info{
-        margin-top: 20px;
-    }
-    .user-info a{
-        align-items: center;
-        display: flex;
-        flex-direction: column;
-    }
-
-    .user-info span{
-        font-style: italic;
-        font-weight: bold;
-    }
-
+    
     .profile-content {
-        width: 10%;               /* Takes 25% of parent container */
-        align-items: center;
-        display: flex;
-        flex-direction: column;
-        border-right: 2px solid black;
-        
+        margin: 0;
+        border-radius: 0;
+        padding: 20px;
     }
-    .userImg {
-        width: 100px;
-        height: 100px;
-        border-radius: 50%; /* makes it a circle */
-        border: 3px solid #000; /* circle border */
-        object-fit: cover; /* keeps image nicely centered/cropped */
-    }
-    .options {
-        margin-top: 50px;
-    }
-    .options li{
-        margin-top: 20px;
-        font-weight: bold;
-        transition: transform 0.3s ease, color 0.3s ease;
-        border-bottom: 1px solid black; /* 👈 Left border */
-        cursor: pointer;
-    }
-    .options li:hover {
-      transform: scale(1.2);
-  }
-    .profile-container{
-        margin: 50px;           
-        border: 1px solid #000; /* circle border */
-        background-color: lightgrey;
-        height: 40vw;
-        display: flex;
-    }
- 
+}
 </style>
-  

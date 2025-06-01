@@ -3,4 +3,4 @@
 - nedrikst uztaisit vairakus auction
 - login regexus
 - pabeidz ka var izdzēst auctions
-- uztaisi ka var likt komentus uz masinas
+- salabo visus raitingus un komentus

@@ -1,16 +1,29 @@
 <script setup>
-    import AuctionCar from './AuctionCar.vue'
+import AuctionCar from './AuctionCar.vue'
+import { useRoute } from 'vue-router'
+import { ref, onMounted, watch, computed } from 'vue'
 
+const route = useRoute()
+const carId = ref(route.params.carid)
 </script>
 
 <template>
-    <div class="auctioncar-container">
-        <AuctionCar/>
-    </div>
+  <div class="auction-container">
+    <AuctionCar :car-id="carId" />
+  </div>
 </template>
 
-<style>
-    .auctioncar-container{
-        margin: 50px;
-    }
+<style scoped>
+.auction-container {
+  max-width: 1200px;
+  margin: 30px auto;
+  padding: 0 20px;
+}
+
+@media (max-width: 768px) {
+  .auction-container {
+    margin: 20px 10px;
+    padding: 0;
+  }
+}
 </style>

@@ -18,7 +18,18 @@ const router = createRouter({
     },
     {
       path: '/profile',
-      component: () => import('../js/views/ProfileView.vue')
+      component: () => import('../js/views/ProfileView.vue'),
+      children: [
+        {
+          path: '',
+          component: () => import('../js/components/ProfileSelection.vue'),
+        },
+        {
+          path: ':carId',  // Make sure this matches what you're using
+          component: () => import('../js/components/ProfileSellingCar.vue'),
+          props: true  // This allows route params to be passed as props
+        }
+      ]
     },
     {
       path: '/addCar',
@@ -32,6 +43,7 @@ const router = createRouter({
     {
       path: '/auction/:carid',
       component: () => import('../js/views/AuctionView.vue'),
+      props: true
     },  
   ],
 })
