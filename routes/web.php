@@ -5,6 +5,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CarController;
 use App\Http\Controllers\AuctionController;
 use App\Http\Controllers\BidController;
+use App\Http\Controllers\UserSettingsController;
 use App\Models\Car; 
 use App\Models\CarModel; 
 use App\Models\CarAuction;
@@ -262,3 +263,4 @@ Route::get('/filteredCars', function (Request $request) {
 
     return response()->json($cars);
 });
+Route::post('/updateUser', [UserSettingsController::class, 'update']);
