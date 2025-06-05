@@ -29,5 +29,13 @@ class CarBrandSeeder extends Seeder
             'manufacturer' => 'Mercedes',
             'image_path' => '/storage/car_brands/Mercedes.png',   
         ]);
+        CarBrand::create([
+            'manufacturer' => 'Nissan',
+            'image_path' => '/storage/car_brands/Nissan.png',   
+        ]);
+        CarBrand::create([
+            'manufacturer' => 'Toyota',
+            'image_path' => '/storage/car_brands/Toyota.png',   
+        ]);
     }
 }

@@ -20,6 +20,7 @@ class CarAuction extends Model
         'start_time',
         'end_time',
         'is_active',
+        'Has_Ended',
     ];
 
     // If you want to treat start_time and end_time as Carbon instances (recommended)

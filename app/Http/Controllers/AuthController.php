@@ -9,43 +9,43 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Response; 
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rules\Password;
 
 class AuthController extends Controller
 {
 
     
     public function registerPost(Request $request)
-    {
-        // larvale.log for debugging
-        Log::info('User registration data:', $request->all());
+{
+    // larvale.log for debugging
+    Log::info('User registration data:', $request->all());
 
+    $validator = Validator::make($request->all(), [
+        'name' => 'required|string|max:255',
+        'email' => 'required|email|unique:users,email',
+        'password' => ['required', 'string', Password::min(8)->mixedCase()->numbers()->symbols()],
+    ]);
 
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Validation failed.',
-                'errors' => $validator->errors()
-            ], 400);
-        }
-
-        $user = User::create([
-            'name' => $request->name,
-            'email'=> $request->email,
-            'password'=> Hash::make($request->password)
-        ]);
-
+    if ($validator->fails()) {
         return response()->json([
-            'status' => 'success',
-            'message' => 'Registration successful.',
-            'user' => $user
-        ], 201);
-
+            'status' => 'error',
+            'message' => 'Validation failed.',
+            'errors' => $validator->errors()
+        ], 400);
     }
+
+    $user = User::create([
+        'name' => $request->name,
+        'email'=> $request->email,
+        'password'=> Hash::make($request->password)
+    ]);
+
+    return response()->json([
+        'status' => 'success',
+        'message' => 'Registration successful.',
+        'user' => $user
+    ], 201);
+}
     public function loginPost(Request $request)
     {
         $credentials = $request->only('email', 'password');

@@ -7,46 +7,67 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Bid;
 use App\Models\CarAuction; 
+use Illuminate\Support\Facades\Log;
 
 class BidController extends Controller
 {
     public function CreateBid(Request $request)
-    {
-        $user = Auth::user();
+{
+    Log::info('CreateBid started', [
+        'request_data' => $request->all(),
+        'user_authenticated' => Auth::check()
+    ]);
 
-        if (!$user) {
-            return response()->json(['message' => 'Unauthorized'], 401);
-        }
+    $user = Auth::user();
 
-        $validated = $request->validate([
-            'auction_id' => 'required|exists:car_auction,id',
-            'bid_amount' => 'required|numeric|min:0.01',
-        ]);
-        $auction = CarAuction::find($validated['auction_id']);
-
-        if (!$auction || !$auction->is_active) {
-            return response()->json(['message' => 'This auction is not active.'], 403);
-        }
-
-        $highestBid = Bid::where('auction_id', $validated['auction_id'])->max('bid_amount');
-
-        if ($highestBid !== null && $validated['bid_amount'] <= $highestBid) {
-        return response()->json([
-            'message' => 'Your bid must be higher than the current highest bid (' . $highestBid . ')'
-        ], 422);
+    if (!$user) {
+        Log::warning('Unauthorized bid attempt');
+        return response()->json(['message' => 'Unauthorized'], 401);
     }
 
-        $bid = Bid::create([
-            'user_id' => $user->id,
-            'auction_id' => $validated['auction_id'],
-            'bid_amount' => $validated['bid_amount'],
-        ]);
+    $validated = $request->validate([
+        'auction_id' => 'required|exists:car_auction,id',
+        'bid_amount' => 'required|numeric|min:0.01',
+    ]);
 
+    Log::info('Request validated', $validated);
+
+    $auction = CarAuction::find($validated['auction_id']);
+
+    if (!$auction || !$auction->is_active) {
+        Log::warning('Auction not found or not active', [
+            'auction_id' => $validated['auction_id']
+        ]);
+        return response()->json(['message' => 'This auction is not active.'], 403);
+    }
+
+    $highestBid = Bid::where('auction_id', $validated['auction_id'])->max('bid_amount');
+    Log::info('Current highest bid', ['highestBid' => $highestBid]);
+
+    if ($highestBid !== null && $validated['bid_amount'] <= $highestBid) {
+        Log::warning('Bid too low', [
+            'user_id' => $user->id,
+            'bid_amount' => $validated['bid_amount'],
+            'highestBid' => $highestBid
+        ]);
         return response()->json([
-            'message' => 'Bid created successfully',
-            'bid' => $bid
-        ], 201);     
-    } 
+            'message' => 'Your bid must be higher than the current highest bid (' . $highestBid . ')'
+        ], 400);
+    }
+
+    $bid = Bid::create([
+        'user_id' => $user->id,
+        'auction_id' => $validated['auction_id'],
+        'bid_amount' => $validated['bid_amount'],
+    ]);
+
+    Log::info('Bid created successfully', ['bid' => $bid]);
+
+    return response()->json([
+        'message' => 'Bid created successfully',
+        'bid' => $bid
+    ], 201);     
+}
 
         
     public function GetUsersBids(Request $request)

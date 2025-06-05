@@ -16,6 +16,7 @@ const props = defineProps({
 const car = ref(null)
 const AuctionCar = ref(false)
 const editCar = ref(false)
+const canListForAuction = ref(true) // Add this flag
 
 // Auction Form
 const startingPrice = ref(0)
@@ -61,8 +62,25 @@ const fetchCar = async () => {
     if (car.value.brand?.id) {
       await getModels(car.value.brand.id)
     }
+
+    // Check auction status
+    await checkAuctionStatus()
   } catch {
     car.value = null
+  }
+}
+const checkAuctionStatus = async () => {
+  try {
+    const response = await axios.get('/canListForAuction', {
+      params: { carId: props.carId }
+    })
+    canListForAuction.value = response.data.can_list
+    if (!canListForAuction.value) {
+      error.value = response.data.message || 'This car cannot be listed for auction'
+    }
+  } catch (err) {
+    console.error('Error checking auction status:', err)
+    error.value = 'Error checking auction status'
   }
 }
 
@@ -286,11 +304,14 @@ onMounted(fetchBrands)
         <!-- Auction Controls -->
         <div class="auction-controls">
           <button 
-            v-if="!car?.auctions?.is_active"
+            v-if="canListForAuction && !car?.auctions?.is_active"
             class="auction-btn list-btn"
             @click="AuctionCar = true">
             List for Auction
           </button>
+          <div v-if="!canListForAuction && !car?.auctions?.is_active" class="auction-message">
+            This car cannot be listed for auction as it's already in an active auction
+          </div>
           <button 
             v-if="car?.auctions?.is_active"
             class="auction-btn cancel-btn"

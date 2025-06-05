@@ -51,10 +51,10 @@ function toggleDropdown() {
                             <RouterLink to="/" class="nav-link">Home</RouterLink>
                         </li>
                         <li>
-                            <RouterLink to="/about" class="nav-link">About Us</RouterLink>
+                            <RouterLink to="/aboutus" class="nav-link">About Us</RouterLink>
                         </li>
                         <li>
-                            <RouterLink to="/contact" class="nav-link">Contact</RouterLink>
+                            <RouterLink to="/contactus" class="nav-link">Contact</RouterLink>
                         </li>
                     </ul>
 

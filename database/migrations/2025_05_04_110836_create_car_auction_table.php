@@ -23,6 +23,7 @@ return new class extends Migration
             $table->float('reserve_price');
 
             $table->boolean('is_active');
+            $table->boolean('Has_Ended')->default(false);
             
             $table->date('start_time');
             $table->date(column: 'end_time');

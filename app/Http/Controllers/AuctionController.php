@@ -59,53 +59,60 @@ class AuctionController extends Controller
     return response()->json($comment);
 }
     public function StartAuctionPost(Request $request)
-    {
-        // larvale.log for debugging
-        Log::info('Auction data:', $request->all());
+{
+    Log::info('Auction data:', $request->all());
 
+    // First check if car already has an active auction
+    $hasActiveAuction = CarAuction::where('car_id', $request->car_id)
+        ->where('Has_Ended', false)
+        ->exists();
 
-        $validator = Validator::make($request->all(), [
-            'car_id' => 'required|exists:cars,id',
-            'startingPrice' => 'required|numeric|min:0',
-            'buyOutPrice' => 'required|numeric|min:0|gte:startingPrice',
-            'bidIncrement' => 'required|numeric|min:0',
-            'reservePrice' => 'required|numeric|min:0|gte:startingPrice|lte:buyOutPrice',
-            'startTime' => 'required|date|after_or_equal:today',
-            'endTime' => 'required|date|after:startTime',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Validation failed.',
-                'errors' => $validator->errors()
-            ], 400);
-        }
-
-        $isActive = Carbon::now()->between(
-            Carbon::parse($request->startTime),
-            Carbon::parse($request->endTime)
-        );
-
-        $CarAuction = CarAuction::create([
-            'car_id' => $request->car_id,
-            'starting_price'=> $request->startingPrice,
-            'buyout_price' => $request->buyOutPrice,
-            'bid_increment'=> $request->bidIncrement,
-            'reserve_price' => $request->reservePrice,
-
-            'start_time'=> $request->startTime,
-            'end_time' => $request->endTime,
-            
-            'is_active'=> $isActive,
-            
-        ]);
-
+    if ($hasActiveAuction) {
         return response()->json([
-            'status' => 'success',
-            'message' => 'CarAuctioned',
-            'CarAuction' => $CarAuction
-        ], 201);
-
+            'status' => 'error',
+            'message' => 'This car already has an active auction. Please end the current auction before creating a new one.',
+        ], 409); // 409 Conflict status code
     }
+
+    $validator = Validator::make($request->all(), [
+        'car_id' => 'required|exists:cars,id',
+        'startingPrice' => 'required|numeric|min:0',
+        'buyOutPrice' => 'required|numeric|min:0|gte:startingPrice',
+        'bidIncrement' => 'required|numeric|min:0',
+        'reservePrice' => 'required|numeric|min:0|gte:startingPrice|lte:buyOutPrice',
+        'startTime' => 'required|date|after_or_equal:today',
+        'endTime' => 'required|date|after:startTime',
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Validation failed.',
+            'errors' => $validator->errors()
+        ], 400);
+    }
+
+    $isActive = Carbon::now()->between(
+        Carbon::parse($request->startTime),
+        Carbon::parse($request->endTime)
+    );
+
+    $CarAuction = CarAuction::create([
+        'car_id' => $request->car_id,
+        'starting_price' => $request->startingPrice,
+        'buyout_price' => $request->buyOutPrice,
+        'bid_increment' => $request->bidIncrement,
+        'reserve_price' => $request->reservePrice,
+        'start_time' => $request->startTime,
+        'end_time' => $request->endTime,
+        'is_active' => $isActive,
+        'Has_Ended' => false, // Explicitly set to false for new auctions
+    ]);
+
+    return response()->json([
+        'status' => 'success',
+        'message' => 'Auction created successfully',
+        'CarAuction' => $CarAuction
+    ], 201);
+}
 }

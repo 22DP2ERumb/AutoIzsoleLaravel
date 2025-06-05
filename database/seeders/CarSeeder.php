@@ -13,7 +13,8 @@ class CarSeeder extends Seeder
      */
     public function run(): void
     {
-        $cars = [
+        // Base car templates (without user_id)
+        $baseCars = [
             [
                 'car_brand_id' => 1,
                 'car_model_id' => 1,
@@ -24,15 +25,14 @@ class CarSeeder extends Seeder
                 'engine_size' => '2.0',
                 'body_type' => 'Sedan',
                 'color' => 'Black',
-                'user_id' => 1,
                 'images' => [
                     '/storage/car_images/car1.jpg',
-                    '/storage/car_images/car2.jpg'
-                ]
+                    '/storage/car_images/car2.jpg',
+                ],
             ],
             [
-                'car_brand_id' => 1,
-                'car_model_id' => 2,
+                'car_brand_id' => 5,
+                'car_model_id' => 28,
                 'year' => 2020,
                 'mileage' => 30000,
                 'fuel_type' => 'Petrol',
@@ -40,15 +40,14 @@ class CarSeeder extends Seeder
                 'engine_size' => '2.5',
                 'body_type' => 'SUV',
                 'color' => 'White',
-                'user_id' => 1,
                 'images' => [
                     '/storage/car_images/car2.jpg',
-                    '/storage/car_images/car1.jpg'
-                ]
+                    '/storage/car_images/car1.jpg',
+                ],
             ],
             [
-                'car_brand_id' => 2,
-                'car_model_id' => 4,
+                'car_brand_id' => 6,
+                'car_model_id' => 35,
                 'year' => 2017,
                 'mileage' => 75000,
                 'fuel_type' => 'Hybrid',
@@ -56,15 +55,14 @@ class CarSeeder extends Seeder
                 'engine_size' => '1.8',
                 'body_type' => 'Hatchback',
                 'color' => 'Blue',
-                'user_id' => 1,
                 'images' => [
                     '/storage/car_images/car1.jpg',
-                    '/storage/car_images/car2.jpg'
-                ]
+                    '/storage/car_images/car2.jpg',
+                ],
             ],
             [
                 'car_brand_id' => 2,
-                'car_model_id' => 5,
+                'car_model_id' => 7,
                 'year' => 2019,
                 'mileage' => 45000,
                 'fuel_type' => 'Petrol',
@@ -72,15 +70,14 @@ class CarSeeder extends Seeder
                 'engine_size' => '2.0',
                 'body_type' => 'Sedan',
                 'color' => 'Grey',
-                'user_id' => 1,
                 'images' => [
                     '/storage/car_images/car1.jpg',
-                    '/storage/car_images/car2.jpg'
-                ]
+                    '/storage/car_images/car2.jpg',
+                ],
             ],
             [
                 'car_brand_id' => 3,
-                'car_model_id' => 7,
+                'car_model_id' => 17,
                 'year' => 2021,
                 'mileage' => 15000,
                 'fuel_type' => 'Electric',
@@ -88,25 +85,48 @@ class CarSeeder extends Seeder
                 'engine_size' => '0.0',
                 'body_type' => 'Sedan',
                 'color' => 'Red',
-                'user_id' => 1,
                 'images' => [
                     '/storage/car_images/car2.jpg',
-                    '/storage/car_images/car1.jpg'
-                ]
+                    '/storage/car_images/car1.jpg',
+                ],
+            ],
+            [
+                'car_brand_id' => 4,
+                'car_model_id' => 22,
+                'year' => 2016,
+                'mileage' => 80000,
+                'fuel_type' => 'Diesel',
+                'transmission' => 'Automatic',
+                'engine_size' => '2.2',
+                'body_type' => 'SUV',
+                'color' => 'Silver',
+                'images' => [
+                    '/storage/car_images/car1.jpg',
+                    '/storage/car_images/car2.jpg',
+                ],
             ],
         ];
 
-        foreach ($cars as $carData) {
-            $images = $carData['images'];
-            unset($carData['images']);
+        // Generate cars for users 1 to 6
+        for ($userId = 1; $userId <= 6; $userId++) {
+            foreach ($baseCars as $carData) {
+                $carData['user_id'] = $userId;
 
-            $car = Car::create($carData);
+                // Slight variation: add userId to mileage and year to diversify
+                $carData['mileage'] += ($userId - 1) * 5000;
+                $carData['year'] = $carData['year'] - ($userId - 1);
 
-            foreach ($images as $path) {
-                Car_Images::create([
-                    'car_id' => $car->id,
-                    'image_path' => $path,
-                ]);
+                $images = $carData['images'];
+                unset($carData['images']);
+
+                $car = Car::create($carData);
+
+                foreach ($images as $path) {
+                    Car_Images::create([
+                        'car_id' => $car->id,
+                        'image_path' => $path,
+                    ]);
+                }
             }
         }
     }

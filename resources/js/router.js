@@ -43,6 +43,14 @@ const router = createRouter({
       path: '/auction/:carid',
       component: () => import('../js/views/AuctionView.vue'),
       props: true
+    }, 
+    {
+      path: '/aboutus',
+      component: () => import('../js/views/AboutUsView.vue'),
+    }, 
+    {
+      path: '/contactus',
+      component: () => import('../js/views/ContactUsView.vue'),
     },  
   ],
 })

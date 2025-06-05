@@ -15,6 +15,13 @@ use Illuminate\Http\Request;
 Route::get('/', function () {
     return view(view: 'welcome');
 });
+Route::get('/contactus', function () {
+    return view(view: 'welcome');
+});
+Route::get('/aboutus', function () {
+    return view(view: 'welcome');
+});
+
 
 //LOGIN
 Route::get('/login', function () {
@@ -140,26 +147,20 @@ Route::delete('/deleteAuction/{auctionId}', function ($auctionId) {
 Route::get('/carAuctions', [CarController::class, 'GetAuctionCars']);
 
 Route::get('/getAuctionCar/{carId}', function ($carId) {
-    Log::info(message: 'Fetching car with ID: ' . $carId);
 
     $car = Car::whereHas('auctions')
               ->with(['images', 'brand', 'model', 'auctions'])
               ->find($carId);
 
     if (!$car) {
-        Log::warning('Car not found or has no auctions', ['car_id' => $carId]);
         return response()->json(['message' => 'Car not found or has no auctions.'], 404);
     }
 
-    Log::info('Car found', ['car_id' => $car->id]);
-
-    // Add `url` attribute to each image
     $car->images->each(function ($image) {
         $image->url = $image->image_path;
     });
 
-    // Get seller from the car user_id
-    $seller = $car->user; // assumes Car model has user() relationship
+    $seller = $car->user;
 
     if (!$seller) {
         Log::warning('Seller not found for car', ['car_id' => $car->id]);
@@ -167,14 +168,19 @@ Route::get('/getAuctionCar/{carId}', function ($carId) {
         Log::info('Seller found', ['seller_id' => $seller->id]);
     }
 
-    // Calculate average rating of the seller
-    $averageRating = $seller ? Comment::where('user_id', $seller->id)->avg('rating') : 0;
-    $averageRating = is_null($averageRating) ? 0 : round($averageRating, 1); // Changed to return 0 if null
+    $averageRating = Comment::join('car_auction', 'comments.auction_id', '=', 'car_auction.id')
+        ->join('cars', 'car_auction.car_id', '=', 'cars.id')
+        ->where('cars.user_id', $seller->id)
+        ->avg('comments.rating');
+
+    $averageRating = is_null($averageRating) ? 0 : round($averageRating, 1);
 
     Log::info('Average rating calculated', ['average_rating' => $averageRating]);
+    Log::info('Sellers Comments', ['Comments' => $averageRating]);
 
     return response()->json([
         'car' => $car,
+        'auctions' => $car->auctions, // explicitly returning auctions,
         'seller' => $seller,
         'averageRating' => $averageRating,
     ]);
@@ -263,4 +269,26 @@ Route::get('/filteredCars', function (Request $request) {
 
     return response()->json($cars);
 });
-Route::post('/updateUser', [UserSettingsController::class, 'update']);
+Route::put('/updateUser', [UserSettingsController::class, 'update']);
+
+Route::put('/updateUserPassword', [UserSettingsController::class, 'updatePassword']);
+
+
+Route::get('/canListForAuction', function (Request $request) {
+    // Check if the car is already in any auction
+    $hasAuction = CarAuction::where('car_id', $request->carId)->exists();
+
+    if (!$hasAuction) {
+        return response()->json(['can_list' => true]);
+    }
+
+    // Check if the car is in an active auction
+    $hasActiveAuction = CarAuction::where('car_id', $request->carId)
+        ->where('Has_Ended', false)
+        ->exists();
+
+    return response()->json([
+        'can_list' => !$hasActiveAuction,
+        'message' => $hasActiveAuction ? 'This car is already in an active auction' : ''
+    ]);
+});

@@ -27,7 +27,6 @@ onMounted(async () => {
     form.value.email = user.value.email;
   } catch (error) {
     errorMessage.value = 'Failed to load user data';
-    setTimeout(() => errorMessage.value = '', 3000);
   }
 });
 
@@ -38,7 +37,7 @@ const updateProfile = async () => {
   errorMessage.value = '';
   
   try {
-    await axios.put('/api/user/profile', {
+    await axios.put('/updateUser', {
       name: form.value.name,
       email: form.value.email,
     });
@@ -66,7 +65,7 @@ const updatePassword = async () => {
   errorMessage.value = '';
   
   try {
-    await axios.put('/api/user/password', {
+    await axios.put('/updateUserPassword', {
       current_password: form.value.current_password,
       new_password: form.value.new_password,
       new_password_confirmation: form.value.new_password_confirmation,

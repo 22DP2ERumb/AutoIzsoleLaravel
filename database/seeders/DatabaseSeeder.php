@@ -13,6 +13,7 @@ class DatabaseSeeder extends Seeder
             CarBrandSeeder::class,
             CarModelSeeder::class,
             CarSeeder::class,
+            AuctionSeeder::class,
         ]);
     }
 }

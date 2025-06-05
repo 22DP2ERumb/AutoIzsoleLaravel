@@ -22,6 +22,7 @@ const bidStats = ref({
   highest_bid: 0,
   unique_bidders: 0
 })
+const auctionID = ref(0)
 const comments = ref([])
 const hasCommented = ref(false)
 const commentForm = ref({
@@ -49,9 +50,10 @@ const fetchCar = async () => {
 }
 
 const fetchBidStats = async () => {
+  if (!carData.value?.auctions?.id) return; // bail out early if no auction id
   try {
     const response = await axios.get('/getBidData', {
-      params: { auction_id: props.carId }
+      params: { auction_id: carData.value.auctions.id }
     })
     bidStats.value = response.data
     yourBid.value = response.data.highest_bid
@@ -61,9 +63,10 @@ const fetchBidStats = async () => {
 }
 
 const fetchUserBid = async () => {
+  if (!carData.value?.auctions?.id) return;
   try {
     const response = await axios.get('/getUserBid', {
-      params: { auction_id: props.carId }
+      params: { auction_id: carData.value.auctions.id }
     })
     userBid.value = response.data.highest_bid ?? 0
   } catch (error) {
@@ -72,8 +75,9 @@ const fetchUserBid = async () => {
 }
 
 const fetchComments = async () => {
+  if (!carData.value?.auctions?.id) return;
   try {
-    const response = await axios.get(`/comments/${props.carId}`)
+    const response = await axios.get(`/comments/${carData.value.auctions.id}`)
     comments.value = response.data.comments
     hasCommented.value = response.data.hasCommented
   } catch (error) {
@@ -84,12 +88,14 @@ const fetchComments = async () => {
 const submitBid = async () => {
   try {
     await axios.post('/createBid', {
-      auction_id: props.carId,
+      auction_id: carData.value.auctions.id,
       bid_amount: yourBid.value
     })
     await Promise.all([fetchBidStats(), fetchUserBid()])
   } catch (error) {
-    console.error('Bid submission failed:', error)
+     alert(error.response?.data?.message || 
+         error.message || 
+         'Failed to submit comment. Please try again.');
   }
 }
 
@@ -98,27 +104,26 @@ const submitComment = async () => {
     const response = await axios.post('/auction/comment', {
       auction_id: carData.value.auctions.id,
       rating: commentForm.value.rating,
-      comment: commentForm.value.comment.trim() // Add trim() to remove whitespace
+      comment: commentForm.value.comment.trim()
     }, {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
       }
     });
-    
-    if (response.data.success) {
-      alert('Comment submitted successfully!');
-      commentForm.value.comment = '';
-      await fetchComments();
-      hasCommented.value = true;
-    } else {
-      throw new Error(response.data.message || 'Failed to submit comment');
-    }
+
+    alert('Comment submitted successfully!');
+    commentForm.value.comment = '';
+    await fetchComments();
+    hasCommented.value = true;
+
   } catch (error) {
     console.error('Comment submission failed:', error);
-    alert(error.response?.data?.message || 
-         error.message || 
-         'Failed to submit comment. Please try again.');
+    alert(
+      error.response?.data?.message || 
+      error.message || 
+      'Failed to submit comment. Please try again.'
+    );
   }
 };
 
@@ -147,27 +152,31 @@ const renderStars = (rating) => {
 
 // Lifecycle
 onMounted(async () => {
-  await Promise.all([
-    fetchCar(),
-    fetchBidStats(),
-    fetchUserBid(),
-    fetchComments()
-  ])
+  await fetchCar();
+  if (carData.value?.auctions?.id) {
+    await Promise.all([fetchBidStats(), fetchUserBid(), fetchComments()]);
+  }
 })
 
-watch(() => props.carId, () => {
-  Promise.all([
-    fetchCar(),
-    fetchBidStats(),
-    fetchUserBid(),
-    fetchComments()
-  ])
+watch(() => props.carId, async () => {
+  await fetchCar();
+  if (carData.value?.auctions?.id) {
+    await Promise.all([fetchBidStats(), fetchUserBid(), fetchComments()]);
+  }
 })
 </script>
-
+<!-- <template>
+  <div v-if="carData && carData.auctions">
+    <span>CarID: {{ props.carId }}</span><br>
+    <span>AuctionID: {{ carData.auctions.id }}</span><br>
+  </div>
+  <div v-else>
+    Loading car data...
+  </div>
+</template> -->
 <template>
   <div v-if="carData" class="auction-car">
-    <!-- Car Images Section -->
+    
     <div class="car-images">
       <div class="image-container">
         <img 
@@ -211,7 +220,7 @@ watch(() => props.carId, () => {
       </div>
     </div>
 
-    <!-- Auction Info Section -->
+    
     <div class="auction-info">
       <div class="tabs">
         <button 
@@ -235,7 +244,7 @@ watch(() => props.carId, () => {
       </div>
 
       <div class="tab-content">
-        <!-- Auction Tab -->
+        
         <div v-if="activeTab === 'auction'" class="auction-tab">
           <div class="bid-stats">
             <div class="stat-item">
@@ -283,7 +292,7 @@ watch(() => props.carId, () => {
           </div>
         </div>
 
-        <!-- Details Tab -->
+        
         <div v-if="activeTab === 'details'" class="details-tab">
           <h3>Car Specifications</h3>
           <div class="specs-grid">
@@ -326,7 +335,7 @@ watch(() => props.carId, () => {
           </div>
         </div>
 
-        <!-- Comments Tab -->
+        
         <div v-if="activeTab === 'comments'" class="comments-tab">
           <div v-if="!hasCommented" class="comment-form">
             <h3>Leave a Review</h3>

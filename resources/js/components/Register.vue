@@ -12,30 +12,45 @@ const router = useRouter();
 
 
 const register = async () => {
+  if (password.value !== repassword.value) {
+    errorMessage.value = 'Passwords do not match!';
+    return;
+  }
 
-    if (password.value !== repassword.value) {
-        errorMessage.value = 'Passwords do not match!';
-        return;
-    }
+  if (!isStrongPassword(password.value)) {
+    errorMessage.value = 'Password must be at least 8 characters, include uppercase, lowercase, a number, and a symbol.';
+    return;
+  }
 
   try {
     await axios.post('/register', {
       name: name.value,
       email: email.value,
       password: password.value
-
     });
 
     name.value = '';
     email.value = '';
     password.value = '';
     repassword.value = '';
+    errorMessage.value = '';
 
     router.push({ path: '/login', query: { registrationSuccess: 'true' } });
   } catch (error) {
-    console.error(error);
+    errorMessage.value =
+      error.response?.data?.message ||
+      error.message ||
+      'Registration failed. Please try again.';
   }
 };
+function isStrongPassword(pw) {
+  const minLength = /.{8,}/;
+  const upper = /[A-Z]/;
+  const lower = /[a-z]/;
+  const number = /[0-9]/;
+  const symbol = /[^A-Za-z0-9]/;
+  return minLength.test(pw) && upper.test(pw) && lower.test(pw) && number.test(pw) && symbol.test(pw);
+}
 </script>
 
 
