@@ -180,7 +180,7 @@ Route::get('/getAuctionCar/{carId}', function ($carId) {
 
     return response()->json([
         'car' => $car,
-        'auctions' => $car->auctions, // explicitly returning auctions,
+        'auctions' => $car->auctions,
         'seller' => $seller,
         'averageRating' => $averageRating,
     ]);
