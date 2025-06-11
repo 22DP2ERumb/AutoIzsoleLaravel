@@ -48,6 +48,9 @@ function toggleDropdown() {
                 <div class="nav-links" :class="{ 'mobile-show': showMobileMenu }">
                     <ul class="main-nav">
                         <li>
+                            <RouterLink v-if="user?.isAdmin" to="/adminPanel" class="nav-link">AdminPanel</RouterLink>
+                        </li>
+                        <li>
                             <RouterLink to="/" class="nav-link">Home</RouterLink>
                         </li>
                         <li>

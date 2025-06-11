@@ -52,6 +52,10 @@ const router = createRouter({
       path: '/contactus',
       component: () => import('../js/views/ContactUsView.vue'),
     },  
+    {
+      path: '/adminPanel',
+      component: () => import('../js/views/AdminPanelView.vue'),
+    },  
   ],
 })
 

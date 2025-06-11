@@ -6,6 +6,7 @@ use App\Http\Controllers\CarController;
 use App\Http\Controllers\AuctionController;
 use App\Http\Controllers\BidController;
 use App\Http\Controllers\UserSettingsController;
+use App\Http\Controllers\AdminController;
 use App\Models\Car; 
 use App\Models\CarModel; 
 use App\Models\CarAuction;
@@ -292,3 +293,17 @@ Route::get('/canListForAuction', function (Request $request) {
         'message' => $hasActiveAuction ? 'This car is already in an active auction' : ''
     ]);
 });
+
+Route::get('/adminPanel', function () {
+    $user = Auth::user();
+
+    if ($user && $user->isAdmin) {
+        return view('welcome');
+    } else {
+        return response('Forbidden', 403);
+    }
+});
+Route::get('/getDashboardAdmin', [AdminController::class, 'getDashboard']);
+Route::get('/getUsersAdmin', [AdminController::class, 'getUsers']);
+Route::put('/updateUserRole/{user}', [AdminController::class, 'updateUserRole']);
+Route::delete('/deleteUserAdmin/{user}', [AdminController::class, 'deleteUser']);

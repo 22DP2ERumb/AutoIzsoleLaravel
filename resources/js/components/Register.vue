@@ -21,6 +21,12 @@ const register = async () => {
     errorMessage.value = 'Password must be at least 8 characters, include uppercase, lowercase, a number, and a symbol.';
     return;
   }
+  if (!isValidEmail(email.value)) {
+    errorMessage.value = 'Email must be valid';
+    return;
+  }
+
+
 
   try {
     await axios.post('/register', {
@@ -50,6 +56,11 @@ function isStrongPassword(pw) {
   const number = /[0-9]/;
   const symbol = /[^A-Za-z0-9]/;
   return minLength.test(pw) && upper.test(pw) && lower.test(pw) && number.test(pw) && symbol.test(pw);
+}
+function isValidEmail(email) {
+  const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  console.log(regex.test(email))
+  return regex.test(email);
 }
 </script>
 

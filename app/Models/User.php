@@ -44,9 +44,14 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_admin' => 'boolean',
         ];
     }
     public function comments() {
         return $this->hasMany(Comment::class);
+    }
+    public function isAdmin(): bool
+    {
+        return $this->isAdmin === 1; // or $this->role === 'admin' if you're using a role field
     }
 }
